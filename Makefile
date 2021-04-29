@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 
 DEVENV=./external/mikanos-build/devenv
 
-all: target/first.img target/hello.img
+all: target/mikanos.img
 .PHONY: all
 
 clean:
@@ -15,7 +15,7 @@ clean:
 .PHONY: clean
 
 update-submodule:
-	git submodule update --init
+	git submodule update --init --recursive
 .PHONY: update-submodule
 
 .PRECIOUS: ./target/%.img ./target/%.o
@@ -45,13 +45,11 @@ run-qemu-%: ./target/%.img ./target/OVMF_CODE.fd ./target/OVMF_VARS.fd update-su
 	sudo cp $< ./target/mnt/EFI/BOOT/BOOTX64.EFI
 	sudo umount ./target/mnt
 
-./target/first.efi:BOOTX64.EFI | ./target/
-	cp $< $@
-
-./target/hello.o: ./src/hello.c | ./target/
-	clang -target x86_64-pc-win32-coff \
-	    -mno-red-zone -fno-stack-protector -fshort-wchar \
-	    -Wall -c $< -o $@
-
-./target/hello.efi: ./target/hello.o
-	lld-link /subsystem:efi_application /entry:EfiMain /out:$@ $<
+./target/mikanos.efi:
+	cd external/edk2
+	set +eu
+	. ./edksetup.sh
+	set -eu
+	build
+	cp ./Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ../../$@
+.PHONY: ./target/mikanos.efi

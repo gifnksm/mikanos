@@ -1,0 +1,17 @@
+#!/bin/bash -eux
+
+REPOROOT="$(dirname "$(readlink -f "$0")")/.."
+cd "${REPOROOT}"
+git submodule update --init --recursive
+cd external/edk2
+make -C BaseTools/Source/C
+ln -sf ../../MikanLoaderPkg ./
+
+set +eux
+. edksetup.sh
+set -eux
+
+sed -i 's!^\(ACTIVE_PLATFORM *= \).*$!\1MikanLoaderPkg/MikanLoaderPkg.dsc\r!' ./Conf/target.txt
+sed -i 's!^\(TARGET *= \).*$!\1DEBUG\r!' ./Conf/target.txt
+sed -i 's!^\(TARGET_ARCH *= \).*$!\1X64\r!' ./Conf/target.txt
+sed -i 's!^\(TOOL_CHAIN_TAG *= \).*$!\1CLANG38\r!' ./Conf/target.txt

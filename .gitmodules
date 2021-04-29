@@ -1,3 +1,6 @@
 [submodule "external/mikanos-build"]
 	path = external/mikanos-build
 	url = https://github.com/uchan-nos/mikanos-build.git
+[submodule "external/edk2"]
+	path = external/edk2
+	url = https://github.com/tianocore/edk2.git

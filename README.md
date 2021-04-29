@@ -12,3 +12,5 @@ Arch Linux on WSL2 + systemd で実装。
   * `dosfstools`
   * `clang`
   * `lld`
+* 第2章
+  * `llvm`
