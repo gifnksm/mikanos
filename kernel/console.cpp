@@ -10,7 +10,7 @@ Console::Console(PixelWriter &writer, const PixelColor &fg_color,
 void Console::PutString(const char *s) {
   while (*s != '\0') {
     if (*s == '\n') {
-      NewLine();
+      Newline();
     } else if (cursor_column_ < kColumns - 1) {
       WriteAscii(writer_, 8 * cursor_column_, 16 * cursor_row_, *s, fg_color_);
       buffer_[cursor_row_][cursor_column_] = *s;
@@ -20,7 +20,7 @@ void Console::PutString(const char *s) {
   }
 }
 
-void Console::NewLine() {
+void Console::Newline() {
   cursor_column_ = 0;
   if (cursor_row_ < kRows - 1) {
     ++cursor_row_;
@@ -30,7 +30,7 @@ void Console::NewLine() {
         writer_.Write(x, y, bg_color_);
       }
     }
-    for (uint32_t row = 0; row < kRows; ++row) {
+    for (uint32_t row = 0; row < kRows - 1; ++row) {
       memcpy(buffer_[row], buffer_[row + 1], kColumns + 1);
       WriteString(writer_, 0, 16 * row, buffer_[row], fg_color_);
     }

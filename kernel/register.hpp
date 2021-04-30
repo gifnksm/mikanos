@@ -27,7 +27,7 @@ public:
 
 private:
   volatile T value_;
-  static const size_t len_ = ArrayLength<decltype(T ::data)>::value;
+  static const size_t len_ = ArrayLength<decltype(T::data)>::value;
 };
 
 template <typename T> struct DefaultBitmap {
@@ -50,12 +50,12 @@ public:
 
   Iterator begin() { return array_; }
   Iterator end() { return array_ + size_; }
-  ConstIterator cbegin() { return array_; }
-  ConstIterator cend() { return array_ + size_; }
+  ConstIterator cbegin() const { return array_; }
+  ConstIterator cend() const { return array_ + size_; }
 
   ValueType &operator[](size_t index) { return array_[index]; }
 
 private:
-  ValueType *array_;
+  ValueType *const array_;
   const size_t size_;
 };
