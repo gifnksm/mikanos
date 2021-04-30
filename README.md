@@ -19,6 +19,14 @@ Arch Linux on WSL2 + systemd で実装。
 
 ## 実行方法
 
+### 初期設定 (初回のみ)
+
+```console
+$ git submodule update --init --recursive
+$ ./scripts/setup_edk2
+$ ./scripts/setup_stdlib
+```
+
 ### QEMU で実行
 
 カーネルや UEFI 等のビルドを行い、 QEMU で実行します。
