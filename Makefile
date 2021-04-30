@@ -8,10 +8,10 @@ MAKEFLAGS += --no-builtin-rules
 CPP_SRCS=$(shell find ./kernel/ -type f -name '*.cpp')
 C_SRCS=$(shell find ./kernel/ -type f -name '*.c')
 ASM_SRCS=$(shell find ./kernel/ -type f -name '*.asm')
-OBJS=$(patsubst ./kernel/%.cpp,./target/%.o,$(CPP_SRCS)) $(patsubst ./kernel/%.c,./target/%.o,$(C_SRCS)) $(patsubst ./kernel/%.asm,./target/%.o,$(ASM_SRCS))
-DEPS=$(patsubst ./kernel/%.cpp,./target/%.d,$(CPP_SRCS)) $(patsubst ./kernel/%.c,./target/%.d,$(C_SRCS))
+OBJS=$(patsubst ./%.cpp,./target/%.o,$(CPP_SRCS)) $(patsubst ./%.c,./target/%.o,$(C_SRCS)) $(patsubst ./%.asm,./target/%.o,$(ASM_SRCS))
+DEPS=$(patsubst ./%.cpp,./target/%.d,$(CPP_SRCS)) $(patsubst ./%.c,./target/%.d,$(C_SRCS))
 
-OBJS+=./target/hankaku.o
+OBJS+=./target/kernel/hankaku.o
 
 DEVENV=./external/mikanos-build/devenv
 CPPFLAGS=\
@@ -84,19 +84,22 @@ ANOTHER_FILE=
 	cp ./Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ../../$@
 .PHONY: ./target/mikanos.efi
 
-./target/%.o: ./kernel/%.cpp Makefile
+./target/%.o: ./%.cpp Makefile
 	mkdir -p $(@D)
 	clang++ -MMD $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
-./target/%.o: ./kernel/%.c Makefile | ./target/
+./target/%.o: ./%.c Makefile | ./target/
 	clang -MMD $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-./target/%.o: ./kernel/%.asm Makefile | ./target/
+./target/%.o: ./%.asm Makefile | ./target/
 	nasm -f elf64 -o $@ $<
 ./target/kernel.elf: $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc
 
-./target/hankaku.bin: ./kernel/hankaku.txt
+./target/kernel/hankaku.bin: ./kernel/hankaku.txt Makefile
+	mkdir -p $(@D)
 	./tools/makefont -o $@ $<
-./target/hankaku.o: ./target/hankaku.bin
-	objcopy -I binary -O elf64-x86-64 -B i386:x86-64 $< $@
+./target/kernel/hankaku.o: ./target/kernel/hankaku.bin
+	OUTPUT=$$(readlink -f $@)
+	cd $(<D)
+	objcopy -I binary -O elf64-x86-64 -B i386:x86-64 $(<F) $${OUTPUT}
 
 -include $(DEPS)

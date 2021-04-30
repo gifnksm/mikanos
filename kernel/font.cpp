@@ -1,15 +1,15 @@
 #include "font.hpp"
 
-extern const uint8_t _binary_target_hankaku_bin_start;
-extern const uint8_t _binary_target_hankaku_bin_end;
-extern const uint8_t _binary_target_hankaku_bin_size;
+extern const uint8_t _binary_hankaku_bin_start;
+extern const uint8_t _binary_hankaku_bin_end;
+extern const uint8_t _binary_hankaku_bin_size;
 
 const uint8_t *GetFont(char c) {
   auto index = 16 * static_cast<unsigned int>(c);
-  if (index >= reinterpret_cast<uintptr_t>(&_binary_target_hankaku_bin_size)) {
+  if (index >= reinterpret_cast<uintptr_t>(&_binary_hankaku_bin_size)) {
     return nullptr;
   }
-  return &_binary_target_hankaku_bin_start + index;
+  return &_binary_hankaku_bin_start + index;
 }
 
 void WriteAscii(PixelWriter &writer, uint32_t x, uint32_t y, char c,
