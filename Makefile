@@ -5,15 +5,17 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
-CPP_SRCS=$(wildcard ./kernel/*.cpp)
-C_SRCS=$(wildcard ./kernel/*.c)
-OBJS=$(patsubst ./kernel/%.cpp,./target/%.o,$(CPP_SRCS)) $(patsubst ./kernel/%.c,./target/%.o,$(C_SRCS))
+CPP_SRCS=$(shell find ./kernel/ -type f -name '*.cpp')
+C_SRCS=$(shell find ./kernel/ -type f -name '*.c')
+ASM_SRCS=$(shell find ./kernel/ -type f -name '*.asm')
+OBJS=$(patsubst ./kernel/%.cpp,./target/%.o,$(CPP_SRCS)) $(patsubst ./kernel/%.c,./target/%.o,$(C_SRCS)) $(patsubst ./kernel/%.asm,./target/%.o,$(ASM_SRCS))
 DEPS=$(patsubst ./kernel/%.cpp,./target/%.d,$(CPP_SRCS)) $(patsubst ./kernel/%.c,./target/%.d,$(C_SRCS))
 
 OBJS+=./target/hankaku.o
 
 DEVENV=./external/mikanos-build/devenv
 CPPFLAGS=\
+    -Ikernel \
     -I$(DEVENV)/x86_64-elf/include/c++/v1 \
     -I$(DEVENV)/x86_64-elf/include \
     -I$(DEVENV)/x86_64-elf/include \
@@ -39,7 +41,7 @@ update-submodule:
 	git submodule update --init --recursive
 .PHONY: update-submodule
 
-.PRECIOUS: ./target/%.img ./target/%.o
+.PRECIOUS: ./target/%.img ./target/%.o ./target/%.fd
 
 %/:
 	mkdir -p $@
@@ -49,6 +51,9 @@ run-qemu-%: ./target/%.img ./target/OVMF_CODE.fd ./target/OVMF_VARS.fd Makefile 
 	    -drive if=pflash,format=raw,readonly,file=./target/OVMF_CODE.fd \
 	    -drive if=pflash,format=raw,file=./target/OVMF_VARS.fd \
 	    -drive if=ide,index=0,media=disk,format=raw,file=$< \
+	    -device nec-usb-xhci,id=xhci \
+	    -device usb-mouse \
+	    -device usb-kbd \
 	    -monitor stdio
 .PHONY: run-qemu-%
 
@@ -79,10 +84,13 @@ ANOTHER_FILE=
 	cp ./Build/MikanLoaderX64/DEBUG_CLANG38/X64/Loader.efi ../../$@
 .PHONY: ./target/mikanos.efi
 
-./target/%.o: ./kernel/%.cpp Makefile | ./target/
+./target/%.o: ./kernel/%.cpp Makefile
+	mkdir -p $(@D)
 	clang++ -MMD $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 ./target/%.o: ./kernel/%.c Makefile | ./target/
 	clang -MMD $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+./target/%.o: ./kernel/%.asm Makefile | ./target/
+	nasm -f elf64 -o $@ $<
 ./target/kernel.elf: $(OBJS) Makefile
 	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc
 

@@ -14,6 +14,8 @@ Arch Linux on WSL2 + systemd で実装。
   * `lld`
 * 第2章
   * `llvm`
+* 第6章
+  * `nasm`
 
 ## 実行方法
 

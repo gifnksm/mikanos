@@ -33,3 +33,18 @@ public:
   using PixelWriter::PixelWriter;
   virtual void Write(uint32_t x, uint32_t y, const PixelColor &c) override;
 };
+
+template <typename T> struct Vector2D {
+  T x, y;
+
+  template <typename U> Vector2D<T> &operator+=(const Vector2D<U> &rhs) {
+    x += rhs.x;
+    y += rhs.y;
+    return *this;
+  }
+};
+
+void DrawRectangle(PixelWriter &writer, const Vector2D<uint32_t> &pos,
+                   const Vector2D<uint32_t> &size, const PixelColor &c);
+void FillRectangle(PixelWriter &writer, const Vector2D<uint32_t> &pos,
+                   const Vector2D<uint32_t> &size, const PixelColor &c);
