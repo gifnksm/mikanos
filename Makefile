@@ -5,7 +5,12 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
-OBJS=./target/main.o
+CPP_SRCS=$(wildcard ./kernel/*.cpp)
+C_SRCS=$(wildcard ./kernel/*.c)
+OBJS=$(patsubst ./kernel/%.cpp,./target/%.o,$(CPP_SRCS)) $(patsubst ./kernel/%.c,./target/%.o,$(C_SRCS))
+DEPS=$(patsubst ./kernel/%.cpp,./target/%.d,$(CPP_SRCS)) $(patsubst ./kernel/%.c,./target/%.d,$(C_SRCS))
+
+OBJS+=./target/hankaku.o
 
 DEVENV=./external/mikanos-build/devenv
 CPPFLAGS=\
@@ -13,10 +18,14 @@ CPPFLAGS=\
     -I$(DEVENV)/x86_64-elf/include \
     -I$(DEVENV)/x86_64-elf/include \
     -nostdlibinc -D__ELF__ -D_LDBL_EQ_DBL -D_GNU_SOURCE -D_POSIX_TIMERS
+CFLAGS=\
+    -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone \
+    --std=c17
 CXXFLAGS=\
     -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone \
     -fno-exceptions -fno-rtti --std=c++17
 LDFLAGS=\
+    -L$(DEVENV)/x86_64-elf/lib \
     --entry KernelMain -z norelro --image-base 0x100000 --static
 
 all: target/mikanos.img
@@ -43,10 +52,7 @@ run-qemu-%: ./target/%.img ./target/OVMF_CODE.fd ./target/OVMF_VARS.fd Makefile 
 	    -monitor stdio
 .PHONY: run-qemu-%
 
-./target/OVMF_CODE.fd: $(DEVENV)/OVMF_CODE.fd Makefile update-submodule
-	cp $< $@
-
-./target/OVMF_VARS.fd: $(DEVENV)/OVMF_VARS.fd Makefile update-submodule
+./target/%.fd: $(DEVENV)/%.fd Makefile update-submodule
 	cp $< $@
 
 ANOTHER_FILE=
@@ -74,6 +80,15 @@ ANOTHER_FILE=
 .PHONY: ./target/mikanos.efi
 
 ./target/%.o: ./kernel/%.cpp Makefile | ./target/
-	clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	clang++ -MMD $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+./target/%.o: ./kernel/%.c Makefile | ./target/
+	clang -MMD $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 ./target/kernel.elf: $(OBJS) Makefile
-	ld.lld $(LDFLAGS) -o $@ $<
+	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc
+
+./target/hankaku.bin: ./kernel/hankaku.txt
+	./tools/makefont -o $@ $<
+./target/hankaku.o: ./target/hankaku.bin
+	objcopy -I binary -O elf64-x86-64 -B i386:x86-64 $< $@
+
+-include $(DEPS)
