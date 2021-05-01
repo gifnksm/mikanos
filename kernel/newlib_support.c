@@ -9,9 +9,17 @@ void _exit(int status) {
   }
 }
 
+caddr_t program_break, program_break_end;
+
 void *sbrk(ptrdiff_t incr) {
-  errno = ENOMEM;
-  return (void *)-1;
+  if (program_break == 0 || program_break + incr >= program_break_end) {
+    errno = ENOMEM;
+    return (void *)-1;
+  }
+
+  caddr_t prev_break = program_break;
+  program_break += incr;
+  return (void *)prev_break;
 }
 
 pid_t getpid(void) { return 1; }

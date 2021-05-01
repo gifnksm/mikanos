@@ -47,7 +47,8 @@ update-submodule:
 	mkdir -p $@
 
 run-qemu-%: ./target/%.img ./target/OVMF_CODE.fd ./target/OVMF_VARS.fd Makefile update-submodule
-		qemu-system-x86_64 \
+	qemu-system-x86_64 \
+	    -m 1G \
 	    -drive if=pflash,format=raw,readonly,file=./target/OVMF_CODE.fd \
 	    -drive if=pflash,format=raw,file=./target/OVMF_VARS.fd \
 	    -drive if=ide,index=0,media=disk,format=raw,file=$< \
@@ -92,7 +93,7 @@ ANOTHER_FILE=
 ./target/%.o: ./%.asm Makefile | ./target/
 	nasm -f elf64 -o $@ $<
 ./target/kernel.elf: $(OBJS) Makefile
-	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++
+	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi
 
 ./target/kernel/hankaku.bin: ./kernel/hankaku.txt Makefile
 	mkdir -p $(@D)

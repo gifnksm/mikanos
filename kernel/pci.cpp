@@ -104,14 +104,14 @@ MsiCapability ReadMsiCapability(const Device &dev, uint8_t cap_addr) {
   msi_cap.msg_addr = ReadConfReg(dev, cap_addr + 4);
 
   uint8_t msg_data_addr = cap_addr + 8;
-  if (msi_cap.header.bits.addr_64_capable != 0) {
+  if (msi_cap.header.bits.addr_64_capable) {
     msi_cap.msg_upper_addr = ReadConfReg(dev, cap_addr + 8);
     msg_data_addr = cap_addr + 12;
   }
 
   msi_cap.msg_data = ReadConfReg(dev, msg_data_addr);
 
-  if (msi_cap.header.bits.per_vector_mask_capable != 0) {
+  if (msi_cap.header.bits.per_vector_mask_capable) {
     msi_cap.mask_bits = ReadConfReg(dev, msg_data_addr + 4);
     msi_cap.pending_bits = ReadConfReg(dev, msg_data_addr + 8);
   }
@@ -130,14 +130,14 @@ void WriteMsiCapability(const Device &dev, uint8_t cap_addr, const MsiCapability
   WriteConfReg(dev, cap_addr + 4, msi_cap.msg_addr);
 
   uint8_t msg_data_addr = cap_addr + 8;
-  if (msi_cap.header.bits.addr_64_capable != 0) {
+  if (msi_cap.header.bits.addr_64_capable) {
     WriteConfReg(dev, cap_addr + 8, msi_cap.msg_upper_addr);
     msg_data_addr = cap_addr + 12;
   }
 
   WriteConfReg(dev, msg_data_addr, msi_cap.msg_data);
 
-  if (msi_cap.header.bits.per_vector_mask_capable != 0) {
+  if (msi_cap.header.bits.per_vector_mask_capable) {
     WriteConfReg(dev, msg_data_addr + 4, msi_cap.mask_bits);
     WriteConfReg(dev, msg_data_addr + 8, msi_cap.pending_bits);
   }
@@ -261,7 +261,7 @@ WithError<uint64_t> ReadBar(Device &device, unsigned int bar_index) {
 
 CapabilityHeader ReadCapabilityHeader(const Device &dev, uint8_t addr) {
   CapabilityHeader header;
-  header.data = ReadConfReg(dev, addr);
+  header.data = pci::ReadConfReg(dev, addr);
   return header;
 }
 
@@ -279,10 +279,9 @@ Error ConfigureMsi(const Device &dev, uint32_t msg_addr, uint32_t msg_data,
     cap_addr = header.bits.next_ptr;
   }
 
-  if (msi_cap_addr != 0) {
+  if (msi_cap_addr) {
     return ConfigureMsiRegister(dev, msi_cap_addr, msg_addr, msg_data, num_vector_exponent);
-  }
-  if (msix_cap_addr != 0) {
+  } else if (msix_cap_addr) {
     return ConfigureMsixRegister(dev, msix_cap_addr, msg_addr, msg_data, num_vector_exponent);
   }
   return MAKE_ERROR(Error::kNoPciMsi);
