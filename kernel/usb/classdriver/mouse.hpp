@@ -7,6 +7,7 @@
 #pragma once
 
 #include "usb/classdriver/hid.hpp"
+
 #include <functional>
 
 namespace usb {

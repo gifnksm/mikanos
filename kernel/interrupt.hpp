@@ -1,17 +1,15 @@
+/**
+ * @file interrupt.hpp
+ *
+ * 割り込み用のプログラムを集めたファイル．
+ */
+
 #pragma once
+
+#include "x86_descriptor.hpp"
 
 #include <array>
 #include <cstdint>
-
-enum class DescriptorType {
-  kUpperBytes = 0,
-  kLdt = 2,
-  kTssAvailable = 9,
-  kTssBusy = 11,
-  kCallGate = 12,
-  kInterruptGate = 14,
-  kTrapGate = 15,
-};
 
 union InterruptDescriptorAttribute {
   uint16_t data;

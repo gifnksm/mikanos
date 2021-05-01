@@ -1,5 +1,13 @@
+/**
+ * @file console.cpp
+ *
+ * コンソール描画のプログラムを集めたファイル．
+ */
+
 #include "console.hpp"
+
 #include "font.hpp"
+
 #include <cstring>
 
 Console::Console(PixelWriter &writer, const PixelColor &fg_color,
@@ -25,12 +33,12 @@ void Console::Newline() {
   if (cursor_row_ < kRows - 1) {
     ++cursor_row_;
   } else {
-    for (uint32_t y = 0; y < 16 * kRows; ++y) {
-      for (uint32_t x = 0; x < 8 * kColumns; ++x) {
+    for (int y = 0; y < 16 * kRows; ++y) {
+      for (int x = 0; x < 8 * kColumns; ++x) {
         writer_.Write(x, y, bg_color_);
       }
     }
-    for (uint32_t row = 0; row < kRows - 1; ++row) {
+    for (int row = 0; row < kRows - 1; ++row) {
       memcpy(buffer_[row], buffer_[row + 1], kColumns + 1);
       WriteString(writer_, 0, 16 * row, buffer_[row], fg_color_);
     }

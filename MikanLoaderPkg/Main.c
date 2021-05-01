@@ -1,5 +1,7 @@
 #include "elf.hpp"
 #include "frame_buffer_config.hpp"
+#include "memory_map.hpp"
+
 #include <Guid/FileInfo.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -12,15 +14,6 @@
 #include <Uefi.h>
 #include <Uefi/UefiBaseType.h>
 #include <Uefi/UefiSpec.h>
-
-struct MemoryMap {
-  UINTN buffer_size;
-  VOID *buffer;
-  UINTN map_size;
-  UINTN map_key;
-  UINTN descriptor_size;
-  UINT32 descriptor_version;
-};
 
 EFI_STATUS GetMemoryMap(struct MemoryMap *map) {
   if (map->buffer == NULL) {
@@ -132,10 +125,11 @@ EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL **root) {
 EFI_STATUS OpenGOP(EFI_HANDLE image_handle,
                    EFI_GRAPHICS_OUTPUT_PROTOCOL **gop) {
   EFI_STATUS status;
-  UINTN num_gop_handle = 0;
+  UINTN num_gop_handles = 0;
   EFI_HANDLE *gop_handles = NULL;
+
   status = gBS->LocateHandleBuffer(ByProtocol, &gEfiGraphicsOutputProtocolGuid,
-                                   NULL, &num_gop_handle, &gop_handles);
+                                   NULL, &num_gop_handles, &gop_handles);
   if (EFI_ERROR(status)) {
     return status;
   }
@@ -177,7 +171,7 @@ void Halt(void) {
 
 void CalcLoadAddressRange(Elf64_Ehdr *ehdr, UINT64 *first, UINT64 *last) {
   Elf64_Phdr *phdr = (Elf64_Phdr *)((UINT64)ehdr + ehdr->e_phoff);
-  *first = UINT64_MAX;
+  *first = MAX_UINT64;
   *last = 0;
   for (Elf64_Half i = 0; i < ehdr->e_phnum; ++i) {
     if (phdr[i].p_type != PT_LOAD) {
@@ -199,7 +193,7 @@ void CopyLoadSegments(Elf64_Ehdr *ehdr) {
     CopyMem((VOID *)phdr[i].p_vaddr, (VOID *)segm_in_file, phdr[i].p_filesz);
 
     UINTN remain_bytes = phdr[i].p_memsz - phdr[i].p_filesz;
-    SetMem((VOID *)phdr[i].p_vaddr + phdr[i].p_filesz, remain_bytes, 0);
+    SetMem((VOID *)(phdr[i].p_vaddr + phdr[i].p_filesz), remain_bytes, 0);
   }
 }
 
@@ -210,10 +204,7 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle,
   Print(L"Hello, Mikan World!\n");
 
   CHAR8 memmap_buf[4096 * 4];
-  struct MemoryMap memmap = {
-      .buffer_size = sizeof(memmap_buf),
-      .buffer = memmap_buf,
-  };
+  struct MemoryMap memmap = {sizeof(memmap_buf), memmap_buf, 0, 0, 0, 0};
   status = GetMemoryMap(&memmap);
   if (EFI_ERROR(status)) {
     Print(L"failed to get memory map: %r\n", status);
@@ -327,25 +318,21 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle,
     status = GetMemoryMap(&memmap);
     if (EFI_ERROR(status)) {
       Print(L"failed to get memory map: %r\n", status);
-      while (1) {
-      }
+      Halt();
     }
     status = gBS->ExitBootServices(image_handle, memmap.map_key);
     if (EFI_ERROR(status)) {
       Print(L"Could not exit boot service: %r\n", status);
-      while (1) {
-      }
+      Halt();
     }
   }
 
   UINT64 entry_addr = *(UINT64 *)(kernel_first_addr + 24);
 
-  struct FrameBufferConfig config = {
-      .frame_buffer = (UINT8 *)gop->Mode->FrameBufferBase,
-      .pixels_per_scan_line = gop->Mode->Info->PixelsPerScanLine,
-      .horizontal_resolution = gop->Mode->Info->HorizontalResolution,
-      .vertical_resolution = gop->Mode->Info->VerticalResolution,
-  };
+  struct FrameBufferConfig config = {(UINT8 *)gop->Mode->FrameBufferBase,
+                                     gop->Mode->Info->PixelsPerScanLine,
+                                     gop->Mode->Info->HorizontalResolution,
+                                     gop->Mode->Info->VerticalResolution, 0};
   switch (gop->Mode->Info->PixelFormat) {
   case PixelRedGreenBlueReserved8BitPerColor:
     config.pixel_format = kPixelRgbResv8BitPerColor;
@@ -354,13 +341,14 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle,
     config.pixel_format = kPixelBgrResv8BitPerColor;
     break;
   default:
-    Print(L"Unimplemented Pixel format: %d\n", gop->Mode->Info->PixelFormat);
+    Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
     Halt();
   }
 
-  typedef void EntryPointType(struct FrameBufferConfig *);
+  typedef void EntryPointType(const struct FrameBufferConfig *,
+                              const struct MemoryMap *);
   EntryPointType *entry_point = (EntryPointType *)entry_addr;
-  entry_point(&config);
+  entry_point(&config, &memmap);
 
   Print(L"All done\n");
 

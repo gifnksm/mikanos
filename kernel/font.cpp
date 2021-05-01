@@ -1,3 +1,9 @@
+/**
+ * @file font.cpp
+ *
+ * フォント描画のプログラムを集めたファイル.
+ */
+
 #include "font.hpp"
 
 extern const uint8_t _binary_hankaku_bin_start;
@@ -12,14 +18,14 @@ const uint8_t *GetFont(char c) {
   return &_binary_hankaku_bin_start + index;
 }
 
-void WriteAscii(PixelWriter &writer, uint32_t x, uint32_t y, char c,
+void WriteAscii(PixelWriter &writer, int x, int y, char c,
                 const PixelColor &color) {
   const uint8_t *font = GetFont(c);
   if (font == nullptr) {
     return;
   }
-  for (uint32_t dy = 0; dy < 16; dy++) {
-    for (uint32_t dx = 0; dx < 8; dx++) {
+  for (int dy = 0; dy < 16; ++dy) {
+    for (int dx = 0; dx < 8; ++dx) {
       if (((font[dy] << dx) & 0x80u) != 0) {
         writer.Write(x + dx, y + dy, color);
       }
@@ -27,7 +33,7 @@ void WriteAscii(PixelWriter &writer, uint32_t x, uint32_t y, char c,
   }
 }
 
-void WriteString(PixelWriter &writer, uint32_t x, uint32_t y, const char *s,
+void WriteString(PixelWriter &writer, int x, int y, const char *s,
                  const PixelColor &color) {
   for (int i = 0; s[i] != '\0'; ++i) {
     WriteAscii(writer, x + 8 * i, y, s[i], color);

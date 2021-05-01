@@ -1,3 +1,9 @@
+/**
+ * @file interrupt.cpp
+ *
+ * 割り込み用のプログラムを集めたファイル．
+ */
+
 #include "interrupt.hpp"
 
 std::array<InterruptDescriptor, 256> idt;

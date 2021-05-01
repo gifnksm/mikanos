@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include <cstdint>
-#include <vector>
-
 #include "error.hpp"
 #include "usb/memory.hpp"
 #include "usb/xhci/registers.hpp"
 #include "usb/xhci/trb.hpp"
+
+#include <cstdint>
+#include <vector>
 
 namespace usb::xhci {
 /** @brief Command/Transfer Ring を表すクラス． */

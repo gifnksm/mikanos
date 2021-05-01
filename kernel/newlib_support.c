@@ -9,7 +9,10 @@ void _exit(int status) {
   }
 }
 
-void *sbrk(ptrdiff_t incr) { return NULL; }
+void *sbrk(ptrdiff_t incr) {
+  errno = ENOMEM;
+  return (void *)-1;
+}
 
 pid_t getpid(void) { return 1; }
 

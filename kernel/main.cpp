@@ -1,19 +1,29 @@
+/**
+ * @file main.cpp
+ *
+ * カーネル本体のプログラムを書いたファイル．
+ */
+
 #include "asmfunc.h"
 #include "console.hpp"
-#include "elf.hpp"
 #include "font.hpp"
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "interrupt.hpp"
 #include "logger.hpp"
+#include "memory_manager.hpp"
+#include "memory_map.hpp"
 #include "mouse.hpp"
+#include "paging.hpp"
 #include "pci.hpp"
 #include "queue.hpp"
+#include "segment.hpp"
 #include "usb/classdriver/mouse.hpp"
 #include "usb/device.hpp"
 #include "usb/memory.hpp"
 #include "usb/xhci/trb.hpp"
 #include "usb/xhci/xhci.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -40,6 +50,9 @@ __attribute__((format(printf, 1, 2))) int printk(const char *format, ...) {
   return result;
 }
 
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
+BitmapMemoryManager *memory_manager;
+
 char mouse_cursor_buf[sizeof(MouseCursor)];
 MouseCursor *mouse_cursor;
 
@@ -49,7 +62,7 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
 
 void SwitchEhci2Xhci(const pci::Device &xhc_dev) {
   bool intel_ehc_exist = false;
-  for (uint32_t i = 0; i < pci::num_device; ++i) {
+  for (int i = 0; i < pci::num_device; ++i) {
     if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x20u) /* EHCI */ &&
         0x8086 == pci::ReadVendorId(pci::devices[i])) {
       intel_ehc_exist = true;
@@ -83,7 +96,14 @@ __attribute__((interrupt)) void IntHandlerXhci(InterruptFrame *frame) {
   NotifyEndOfInterrupt();
 }
 
-extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
+alignas(16) uint8_t kernel_main_stack[1024 * 1024];
+
+extern "C" void
+KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
+                   const MemoryMap &memory_map_ref) {
+  FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
+  MemoryMap memory_map{memory_map_ref};
+
   switch (frame_buffer_config.pixel_format) {
   case kPixelRgbResv8BitPerColor:
     pixel_writer = new (pixel_writer_buf)
@@ -95,8 +115,8 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
     break;
   }
 
-  const uint32_t kFrameWidth = frame_buffer_config.horizontal_resolution;
-  const uint32_t kFrameHeight = frame_buffer_config.vertical_resolution;
+  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
+  const int kFrameHeight = frame_buffer_config.vertical_resolution;
 
   FillRectangle(*pixel_writer, {0, 0}, {kFrameWidth, kFrameHeight - 50},
                 kDesktopBgColor);
@@ -112,6 +132,42 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
+  SetupSegments();
+
+  const uint16_t kernel_cs = 1 << 3;
+  const uint16_t kernel_ss = 2 << 3;
+  SetDsAll(0);
+  SetCsSs(kernel_cs, kernel_ss);
+
+  SetupIdentityPageTable();
+
+  ::memory_manager = new (memory_manager_buf) BitmapMemoryManager;
+
+  const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
+  uintptr_t available_end = 0;
+  for (uintptr_t iter = memory_map_base;
+       iter < memory_map_base + memory_map.map_size;
+       iter += memory_map.descriptor_size) {
+    auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
+    if (available_end < desc->physical_start) {
+      memory_manager->MarkAllocated(FrameId{available_end / kBytesPerFrame},
+                                    (desc->physical_start - available_end) /
+                                        kBytesPerFrame);
+    }
+
+    const auto physical_end =
+        desc->physical_start + desc->number_of_pages * kUefiPageSize;
+    if (IsAvailable(static_cast<MemoryType>(desc->type))) {
+      available_end = physical_end;
+    } else {
+      memory_manager->MarkAllocated(
+          FrameId{desc->physical_start / kBytesPerFrame},
+          desc->number_of_pages * kUefiPageSize / kBytesPerFrame);
+    }
+  }
+  memory_manager->SetMemoryRange(FrameId{1},
+                                 FrameId{available_end / kBytesPerFrame});
+
   mouse_cursor = new (mouse_cursor_buf)
       MouseCursor{pixel_writer, kDesktopBgColor, {300, 200}};
 
@@ -122,7 +178,7 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
   auto err = pci::ScanAllBus();
   Log(kDebug, "ScanAllBus: %s\n", err.Name());
 
-  for (uint32_t i = 0; i < pci::num_device; ++i) {
+  for (int i = 0; i < pci::num_device; ++i) {
     const auto &dev = pci::devices[i];
     auto vendor_id = pci::ReadVendorId(dev);
     auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
@@ -130,8 +186,9 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
         dev.device, dev.function, vendor_id, class_code, dev.header_type);
   }
 
+  // Intel 製を優先して xHC を探す
   pci::Device *xhc_dev = nullptr;
-  for (uint32_t i = 0; i < pci::num_device; ++i) {
+  for (int i = 0; i < pci::num_device; ++i) {
     if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
       xhc_dev = &pci::devices[i];
 
@@ -146,10 +203,9 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
         xhc_dev->function);
   }
 
-  const uint16_t cs = GetCs();
   SetIdtEntry(idt[InterruptVector::kXhci],
               MakeIdtAttr(DescriptorType::kInterruptGate, 0),
-              reinterpret_cast<uint64_t>(IntHandlerXhci), cs);
+              reinterpret_cast<uint64_t>(IntHandlerXhci), kernel_cs);
   LoadIdt(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
   const uint8_t bsp_local_apic_id =
@@ -180,7 +236,7 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
 
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
-  for (uint32_t i = 1; i <= xhc.MaxPorts(); ++i) {
+  for (int i = 1; i <= xhc.MaxPorts(); ++i) {
     auto port = xhc.PortAt(i);
     Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
 
@@ -197,6 +253,7 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config) {
     __asm__("cli");
     if (main_queue.Count() == 0) {
       __asm__("sti\n\thlt");
+      continue;
     }
 
     Message msg = main_queue.Front();

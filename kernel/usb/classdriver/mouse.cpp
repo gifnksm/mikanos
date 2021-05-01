@@ -3,6 +3,7 @@
 #include "logger.hpp"
 #include "usb/device.hpp"
 #include "usb/memory.hpp"
+
 #include <algorithm>
 
 namespace usb {

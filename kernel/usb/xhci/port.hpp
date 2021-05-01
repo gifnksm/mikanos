@@ -7,9 +7,9 @@
 #pragma once
 
 #include "error.hpp"
-#include <cstdint>
-
 #include "usb/xhci/registers.hpp"
+
+#include <cstdint>
 
 #define CLEAR_STATUS_BIT(bitname)                                              \
   [this]() {                                                                   \

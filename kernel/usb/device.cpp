@@ -1,12 +1,11 @@
 #include "usb/device.hpp"
 
+#include "logger.hpp"
 #include "usb/classdriver/base.hpp"
 #include "usb/classdriver/keyboard.hpp"
 #include "usb/classdriver/mouse.hpp"
 #include "usb/descriptor.hpp"
 #include "usb/setupdata.hpp"
-
-#include "logger.hpp"
 
 namespace {
 class ConfigurationDescriptorReader {

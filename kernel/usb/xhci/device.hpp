@@ -6,15 +6,15 @@
 
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-
 #include "error.hpp"
 #include "usb/arraymap.hpp"
 #include "usb/device.hpp"
 #include "usb/xhci/context.hpp"
 #include "usb/xhci/registers.hpp"
 #include "usb/xhci/trb.hpp"
+
+#include <cstddef>
+#include <cstdint>
 
 namespace usb::xhci {
 class Device : public usb::Device {

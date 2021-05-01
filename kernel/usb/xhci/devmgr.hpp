@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
-
 #include "error.hpp"
 #include "usb/xhci/context.hpp"
 #include "usb/xhci/device.hpp"
+
+#include <cstddef>
+#include <cstdint>
 
 namespace usb::xhci {
 class DeviceManager {

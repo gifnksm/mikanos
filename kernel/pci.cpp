@@ -1,18 +1,30 @@
+/**
+ * @file pci.cpp
+ *
+ * PCI バス制御のプログラムを集めたファイル．
+ */
+
 #include "pci.hpp"
+
 #include "asmfunc.h"
+
 #include <cstdint>
 
 namespace {
 using namespace pci;
 
+/** @brief CONFIG_ADDRESS 用の 32 ビット整数を生成する */
 uint32_t MakeAddress(uint8_t bus, uint8_t device, uint8_t function,
                      uint8_t reg_addr) {
   auto shl = [](uint32_t x, unsigned int bits) { return x << bits; };
 
-  return shl(1, 31) | shl(bus, 16) | shl(device, 11) | shl(function, 8) |
+  return shl(1, 31) // enable bit
+         | shl(bus, 16) | shl(device, 11) | shl(function, 8) |
          (reg_addr & 0xfcu);
 }
 
+/** @brief devices[num_device] に情報を書き込み num_device
+ * をインクリメントする． */
 Error AddDevice(const Device &device) {
   if (num_device == devices.size()) {
     return MAKE_ERROR(Error::kFull);
@@ -25,6 +37,9 @@ Error AddDevice(const Device &device) {
 
 Error ScanBus(uint8_t bus);
 
+/** @brief 指定のファンクションを devices に追加する．
+ * もし PCI-PCI ブリッジなら，セカンダリバスに対し ScanBus を実行する
+ */
 Error ScanFunction(uint8_t bus, uint8_t device, uint8_t function) {
   auto class_code = ReadClassCode(bus, device, function);
   auto header_type = ReadHeaderType(bus, device, function);
@@ -43,6 +58,9 @@ Error ScanFunction(uint8_t bus, uint8_t device, uint8_t function) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
+/** @brief 指定のデバイス番号の各ファンクションをスキャンする．
+ * 有効なファンクションを見つけたら ScanFunction を実行する．
+ */
 Error ScanDevice(uint8_t bus, uint8_t device) {
   if (auto err = ScanFunction(bus, device, 0)) {
     return err;
@@ -62,6 +80,9 @@ Error ScanDevice(uint8_t bus, uint8_t device) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
+/** @brief 指定のバス番号の各デバイスをスキャンする．
+ * 有効なデバイスを見つけたら ScanDevice を実行する．
+ */
 Error ScanBus(uint8_t bus) {
   for (uint8_t device = 0; device < 32; ++device) {
     if (ReadVendorId(bus, device, 0) == 0xffffu) {
@@ -74,6 +95,11 @@ Error ScanBus(uint8_t bus) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
+/** @brief 指定された MSI ケーパビリティ構造を読み取る
+ *
+ * @param dev  MSI ケーパビリティを読み込む PCI デバイス
+ * @param cap_addr  MSI ケーパビリティレジスタのコンフィグレーション空間アドレス
+ */
 MsiCapability ReadMsiCapability(const Device &dev, uint8_t cap_addr) {
   MsiCapability msi_cap{};
 
@@ -96,6 +122,12 @@ MsiCapability ReadMsiCapability(const Device &dev, uint8_t cap_addr) {
   return msi_cap;
 }
 
+/** @brief 指定された MSI ケーパビリティ構造に書き込む
+ *
+ * @param dev  MSI ケーパビリティを読み込む PCI デバイス
+ * @param cap_addr  MSI ケーパビリティレジスタのコンフィグレーション空間アドレス
+ * @param msi_cap  書き込む値
+ */
 void WriteMsiCapability(const Device &dev, uint8_t cap_addr,
                         const MsiCapability &msi_cap) {
   WriteConfReg(dev, cap_addr, msi_cap.header.data);
@@ -115,6 +147,7 @@ void WriteMsiCapability(const Device &dev, uint8_t cap_addr,
   }
 }
 
+/** @brief 指定された MSI レジスタを設定する */
 Error ConfigureMsiRegister(const Device &dev, uint8_t cap_addr,
                            uint32_t msg_addr, uint32_t msg_data,
                            unsigned int num_vector_exponent) {
@@ -135,12 +168,12 @@ Error ConfigureMsiRegister(const Device &dev, uint8_t cap_addr,
   return MAKE_ERROR(Error::kSuccess);
 }
 
+/** @brief 指定された MSI レジスタを設定する */
 Error ConfigureMsixRegister(const Device &dev, uint8_t cap_addr,
                             uint32_t msg_addr, uint32_t msg_data,
                             unsigned int num_vector_exponent) {
   return MAKE_ERROR(Error::kNotImplemented);
 }
-
 } // namespace
 
 namespace pci {
@@ -279,5 +312,4 @@ Error ConfigureMsiFixedDestination(const Device &dev, uint8_t apic_id,
   }
   return ConfigureMsi(dev, msg_addr, msg_data, num_vector_exponent);
 }
-
 } // namespace pci

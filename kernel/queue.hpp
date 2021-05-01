@@ -1,6 +1,7 @@
 #pragma once
 
 #include "error.hpp"
+
 #include <array>
 #include <cstddef>
 
@@ -17,6 +18,11 @@ public:
 private:
   T *data_;
   size_t read_pos_, write_pos_, count_;
+  /*
+   * read_pos_ points to an element to be read.
+   * write_pos_ points to a blank position.
+   * count_ is the number of elements available.
+   */
   const size_t capacity_;
 };
 

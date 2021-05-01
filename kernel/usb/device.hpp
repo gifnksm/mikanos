@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include <array>
-
 #include "error.hpp"
 #include "usb/arraymap.hpp"
 #include "usb/endpoint.hpp"
 #include "usb/setupdata.hpp"
+
+#include <array>
 
 namespace usb {
 class ClassDriver;

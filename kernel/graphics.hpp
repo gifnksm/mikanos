@@ -9,12 +9,11 @@ struct PixelColor {
 class PixelWriter {
 public:
   PixelWriter(const FrameBufferConfig &config) : config_{config} {}
-
   virtual ~PixelWriter() = default;
-  virtual void Write(uint32_t x, uint32_t y, const PixelColor &c) = 0;
+  virtual void Write(int x, int y, const PixelColor &c) = 0;
 
 protected:
-  uint8_t *PixelAt(uint32_t x, uint32_t y) {
+  uint8_t *PixelAt(int x, int y) {
     return config_.frame_buffer + 4 * (config_.pixels_per_scan_line * y + x);
   }
 
@@ -25,13 +24,13 @@ private:
 class RgbResv8BitPerColorPixelWriter : public PixelWriter {
 public:
   using PixelWriter::PixelWriter;
-  virtual void Write(uint32_t x, uint32_t y, const PixelColor &c) override;
+  virtual void Write(int x, int y, const PixelColor &c) override;
 };
 
 class BgrResv8BitPerColorPixelWriter : public PixelWriter {
 public:
   using PixelWriter::PixelWriter;
-  virtual void Write(uint32_t x, uint32_t y, const PixelColor &c) override;
+  virtual void Write(int x, int y, const PixelColor &c) override;
 };
 
 template <typename T> struct Vector2D {
@@ -44,7 +43,8 @@ template <typename T> struct Vector2D {
   }
 };
 
-void DrawRectangle(PixelWriter &writer, const Vector2D<uint32_t> &pos,
-                   const Vector2D<uint32_t> &size, const PixelColor &c);
-void FillRectangle(PixelWriter &writer, const Vector2D<uint32_t> &pos,
-                   const Vector2D<uint32_t> &size, const PixelColor &c);
+void DrawRectangle(PixelWriter &writer, const Vector2D<int> &pos,
+                   const Vector2D<int> &size, const PixelColor &c);
+
+void FillRectangle(PixelWriter &writer, const Vector2D<int> &pos,
+                   const Vector2D<int> &size, const PixelColor &c);

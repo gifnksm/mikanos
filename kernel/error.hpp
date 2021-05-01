@@ -26,7 +26,7 @@ public:
     kUnknownXHCISpeedID,
     kNoWaiter,
     kNoPciMsi,
-    kLastOfCode,
+    kLastOfCode, // この列挙子は常に最後に配置する
   };
 
 private:
@@ -68,6 +68,7 @@ public:
   }
 
   const char *File() const { return this->file_; }
+
   int Line() const { return this->line_; }
 
 private:

@@ -1,3 +1,9 @@
+/**
+ * @file register.hpp
+ *
+ * メモリマップトレジスタを読み書きする機能を提供する．
+ */
+
 #pragma once
 
 #include <cstddef>
@@ -9,6 +15,13 @@ template <typename T, size_t N> struct ArrayLength<T[N]> {
   static const size_t value = N;
 };
 
+/**
+ * MemMapRegister is a wrapper for a memory mapped register.
+ *
+ * MemMapRegister forces user program to read/write the underlying register
+ * with specific bit width. The bit width will be deduced from the type of
+ * T::data. T is the template parameter. T::data should be an array.
+ */
 template <typename T> class MemMapRegister {
 public:
   T Read() const {
@@ -37,6 +50,19 @@ template <typename T> struct DefaultBitmap {
   operator T() const { return data[0]; }
 };
 
+/*
+ * Design: container-like classes.
+ *
+ * Container-like classes, such as PortArray and DeviceContextArray,
+ * should have Size() method and Iterator type.
+ * Size() should return the number of elements, and iterators
+ * of that type should iterate all elements.
+ *
+ * Each element may have a flag indicating availableness of the element.
+ * For example each port has "Port Enabled/Disabled" bit.
+ * Size() and iterators should not skip disabled elements.
+ */
+
 template <typename T> class ArrayWrapper {
 public:
   using ValueType = T;
@@ -48,6 +74,8 @@ public:
 
   size_t Size() const { return size_; }
 
+  // begin, end, cbegin, cend must be lower case names
+  // to be used in rage-based for statements.
   Iterator begin() { return array_; }
   Iterator end() { return array_ + size_; }
   ConstIterator cbegin() const { return array_; }
