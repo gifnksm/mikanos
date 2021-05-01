@@ -11,12 +11,12 @@
 
 #include <cstdint>
 
-#define CLEAR_STATUS_BIT(bitname)                                              \
-  [this]() {                                                                   \
-    PORTSC_Bitmap portsc = port_reg_set_.PORTSC.Read();                        \
-    portsc.data[0] &= 0x0e01c3e0u;                                             \
-    portsc.bits.bitname = 1;                                                   \
-    port_reg_set_.PORTSC.Write(portsc);                                        \
+#define CLEAR_STATUS_BIT(bitname)                                                                  \
+  [this]() {                                                                                       \
+    PORTSC_Bitmap portsc = port_reg_set_.PORTSC.Read();                                            \
+    portsc.data[0] &= 0x0e01c3e0u;                                                                 \
+    portsc.bits.bitname = 1;                                                                       \
+    port_reg_set_.PORTSC.Write(portsc);                                                            \
   }()
 
 namespace usb::xhci {
@@ -38,9 +38,7 @@ public:
   Error Reset();
   Device *Initialize();
 
-  void ClearConnectStatusChanged() const {
-    CLEAR_STATUS_BIT(connect_status_change);
-  }
+  void ClearConnectStatusChanged() const { CLEAR_STATUS_BIT(connect_status_change); }
   void ClearPortResetChange() const { CLEAR_STATUS_BIT(port_reset_change); }
 
 private:

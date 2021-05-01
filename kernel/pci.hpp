@@ -26,9 +26,7 @@ struct ClassCode {
   /** @brief ベースクラスとサブクラスが等しい場合に真を返す */
   bool Match(uint8_t b, uint8_t s) { return Match(b) && s == sub; }
   /** @brief ベース，サブ，インターフェースが等しい場合に真を返す */
-  bool Match(uint8_t b, uint8_t s, uint8_t i) {
-    return Match(b, s) && i == interface;
-  }
+  bool Match(uint8_t b, uint8_t s, uint8_t i) { return Match(b, s) && i == interface; }
 };
 
 /** @brief PCI デバイスを操作するための基礎データを格納する
@@ -89,9 +87,7 @@ inline int num_device;
  */
 Error ScanAllBus();
 
-constexpr uint8_t CalcBarAddress(unsigned int bar_index) {
-  return 0x10 + 4 * bar_index;
-}
+constexpr uint8_t CalcBarAddress(unsigned int bar_index) { return 0x10 + 4 * bar_index; }
 
 WithError<uint64_t> ReadBar(Device &device, unsigned int bar_index);
 
@@ -163,9 +159,7 @@ enum class MsiDeliveryMode {
   kExtInt = 0b111,
 };
 
-Error ConfigureMsiFixedDestination(const Device &dev, uint8_t apic_id,
-                                   MsiTriggerMode trigger_mode,
-                                   MsiDeliveryMode delivery_mode,
-                                   uint8_t vector,
+Error ConfigureMsiFixedDestination(const Device &dev, uint8_t apic_id, MsiTriggerMode trigger_mode,
+                                   MsiDeliveryMode delivery_mode, uint8_t vector,
                                    unsigned int num_vector_exponent);
 } // namespace pci

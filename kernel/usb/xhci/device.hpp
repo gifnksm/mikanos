@@ -21,10 +21,8 @@ class Device : public usb::Device {
 public:
   enum class State { kInvalid, kBlank, kSlotAssigning, kSlotAssigned };
 
-  using OnTransferredCallbackType = void(Device *dev, DeviceContextIndex dci,
-                                         int completion_code,
-                                         int trb_transfer_length,
-                                         TRB *issue_trb);
+  using OnTransferredCallbackType = void(Device *dev, DeviceContextIndex dci, int completion_code,
+                                         int trb_transfer_length, TRB *issue_trb);
 
   Device(uint8_t slot_id, DoorbellRegister *dbreg);
 
@@ -43,8 +41,8 @@ public:
 
   Error ControlIn(EndpointID ep_id, SetupData setup_data, void *buf, int len,
                   ClassDriver *issuer) override;
-  Error ControlOut(EndpointID ep_id, SetupData setup_data, const void *buf,
-                   int len, ClassDriver *issuer) override;
+  Error ControlOut(EndpointID ep_id, SetupData setup_data, const void *buf, int len,
+                   ClassDriver *issuer) override;
   Error InterruptIn(EndpointID ep_id, void *buf, int len) override;
   Error InterruptOut(EndpointID ep_id, void *buf, int len) override;
 

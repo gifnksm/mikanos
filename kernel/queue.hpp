@@ -63,10 +63,6 @@ template <typename T> Error ArrayQueue<T>::Pop() {
 
 template <typename T> size_t ArrayQueue<T>::Count() const { return count_; }
 
-template <typename T> size_t ArrayQueue<T>::Capacity() const {
-  return capacity_;
-}
+template <typename T> size_t ArrayQueue<T>::Capacity() const { return capacity_; }
 
-template <typename T> const T &ArrayQueue<T>::Front() const {
-  return data_[read_pos_];
-}
+template <typename T> const T &ArrayQueue<T>::Front() const { return data_[read_pos_]; }

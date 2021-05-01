@@ -10,8 +10,7 @@
 
 class MouseCursor {
 public:
-  MouseCursor(PixelWriter *writer, PixelColor erase_color,
-              Vector2D<int> initial_position);
+  MouseCursor(PixelWriter *writer, PixelColor erase_color, Vector2D<int> initial_position);
   void MoveRelative(Vector2D<int> displacement);
 
 private:

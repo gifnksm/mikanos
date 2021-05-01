@@ -26,18 +26,15 @@ static const size_t kMemoryPoolSize = 4096 * 32;
  */
 void *AllocMem(size_t size, unsigned int alignment, unsigned int boundary);
 
-template <class T>
-T *AllocArray(size_t num_obj, unsigned int alignment, unsigned int boundary) {
-  return reinterpret_cast<T *>(
-      AllocMem(sizeof(T) * num_obj, alignment, boundary));
+template <class T> T *AllocArray(size_t num_obj, unsigned int alignment, unsigned int boundary) {
+  return reinterpret_cast<T *>(AllocMem(sizeof(T) * num_obj, alignment, boundary));
 }
 
 /** @brief 指定されたメモリ領域を解放する．本当に解放することは保証されない． */
 void FreeMem(void *p);
 
 /** @brief 標準コンテナ用のメモリアロケータ */
-template <class T, unsigned int Alignment = 64, unsigned int Boundary = 4096>
-class Allocator {
+template <class T, unsigned int Alignment = 64, unsigned int Boundary = 4096> class Allocator {
 public:
   using size_type = size_t;
   using pointer = T *;
@@ -49,9 +46,7 @@ public:
   ~Allocator() noexcept = default;
   Allocator &operator=(const Allocator &) = default;
 
-  pointer allocate(size_type n) {
-    return AllocArray<T>(n, Alignment, Boundary);
-  }
+  pointer allocate(size_type n) { return AllocArray<T>(n, Alignment, Boundary); }
 
   void deallocate(pointer p, size_type num) { FreeMem(p); }
 };

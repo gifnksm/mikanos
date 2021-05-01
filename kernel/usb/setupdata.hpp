@@ -82,8 +82,7 @@ struct SetupData {
 } __attribute__((packed));
 
 inline bool operator==(SetupData lhs, SetupData rhs) {
-  return lhs.request_type.data == rhs.request_type.data &&
-         lhs.request == rhs.request && lhs.value == rhs.value &&
-         lhs.index == rhs.index && lhs.length == rhs.length;
+  return lhs.request_type.data == rhs.request_type.data && lhs.request == rhs.request &&
+         lhs.value == rhs.value && lhs.index == rhs.index && lhs.length == rhs.length;
 }
 } // namespace usb

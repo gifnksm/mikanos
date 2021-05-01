@@ -30,13 +30,11 @@ void *HIDKeyboardDriver::operator new(size_t size) {
 
 void HIDKeyboardDriver::operator delete(void *ptr) noexcept { FreeMem(ptr); }
 
-void HIDKeyboardDriver::SubscribeKeyPush(
-    std::function<void(uint8_t keycode)> observer) {
+void HIDKeyboardDriver::SubscribeKeyPush(std::function<void(uint8_t keycode)> observer) {
   observers_[num_observers_++] = observer;
 }
 
-std::function<HIDKeyboardDriver::ObserverType>
-    HIDKeyboardDriver::default_observer;
+std::function<HIDKeyboardDriver::ObserverType> HIDKeyboardDriver::default_observer;
 
 void HIDKeyboardDriver::NotifyKeyPush(uint8_t keycode) {
   for (int i = 0; i < num_observers_; ++i) {

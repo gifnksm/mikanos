@@ -15,17 +15,14 @@ public:
   Error Initialize() override;
   Error SetEndpoint(const EndpointConfig &config) override;
   Error OnEndpointsConfigured() override;
-  Error OnControlCompleted(EndpointID ep_id, SetupData setup_data,
-                           const void *buf, int len) override;
-  Error OnInterruptCompleted(EndpointID ep_id, const void *buf,
-                             int len) override;
+  Error OnControlCompleted(EndpointID ep_id, SetupData setup_data, const void *buf,
+                           int len) override;
+  Error OnInterruptCompleted(EndpointID ep_id, const void *buf, int len) override;
 
   virtual Error OnDataReceived() = 0;
   const static size_t kBufferSize = 1024;
   const std::array<uint8_t, kBufferSize> &Buffer() const { return buf_; }
-  const std::array<uint8_t, kBufferSize> &PreviousBuffer() const {
-    return previous_buf_;
-  }
+  const std::array<uint8_t, kBufferSize> &PreviousBuffer() const { return previous_buf_; }
 
 private:
   EndpointID ep_interrupt_in_;

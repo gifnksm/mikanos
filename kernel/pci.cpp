@@ -14,17 +14,14 @@ namespace {
 using namespace pci;
 
 /** @brief CONFIG_ADDRESS 用の 32 ビット整数を生成する */
-uint32_t MakeAddress(uint8_t bus, uint8_t device, uint8_t function,
-                     uint8_t reg_addr) {
+uint32_t MakeAddress(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg_addr) {
   auto shl = [](uint32_t x, unsigned int bits) { return x << bits; };
 
   return shl(1, 31) // enable bit
-         | shl(bus, 16) | shl(device, 11) | shl(function, 8) |
-         (reg_addr & 0xfcu);
+         | shl(bus, 16) | shl(device, 11) | shl(function, 8) | (reg_addr & 0xfcu);
 }
 
-/** @brief devices[num_device] に情報を書き込み num_device
- * をインクリメントする． */
+/** @brief devices[num_device] に情報を書き込み num_device をインクリメントする． */
 Error AddDevice(const Device &device) {
   if (num_device == devices.size()) {
     return MAKE_ERROR(Error::kFull);
@@ -128,8 +125,7 @@ MsiCapability ReadMsiCapability(const Device &dev, uint8_t cap_addr) {
  * @param cap_addr  MSI ケーパビリティレジスタのコンフィグレーション空間アドレス
  * @param msi_cap  書き込む値
  */
-void WriteMsiCapability(const Device &dev, uint8_t cap_addr,
-                        const MsiCapability &msi_cap) {
+void WriteMsiCapability(const Device &dev, uint8_t cap_addr, const MsiCapability &msi_cap) {
   WriteConfReg(dev, cap_addr, msi_cap.header.data);
   WriteConfReg(dev, cap_addr + 4, msi_cap.msg_addr);
 
@@ -148,14 +144,12 @@ void WriteMsiCapability(const Device &dev, uint8_t cap_addr,
 }
 
 /** @brief 指定された MSI レジスタを設定する */
-Error ConfigureMsiRegister(const Device &dev, uint8_t cap_addr,
-                           uint32_t msg_addr, uint32_t msg_data,
-                           unsigned int num_vector_exponent) {
+Error ConfigureMsiRegister(const Device &dev, uint8_t cap_addr, uint32_t msg_addr,
+                           uint32_t msg_data, unsigned int num_vector_exponent) {
   auto msi_cap = ReadMsiCapability(dev, cap_addr);
 
   if (msi_cap.header.bits.multi_msg_capable <= num_vector_exponent) {
-    msi_cap.header.bits.multi_msg_enable =
-        msi_cap.header.bits.multi_msg_capable;
+    msi_cap.header.bits.multi_msg_enable = msi_cap.header.bits.multi_msg_capable;
   } else {
     msi_cap.header.bits.multi_msg_enable = num_vector_exponent;
   }
@@ -169,9 +163,8 @@ Error ConfigureMsiRegister(const Device &dev, uint8_t cap_addr,
 }
 
 /** @brief 指定された MSI レジスタを設定する */
-Error ConfigureMsixRegister(const Device &dev, uint8_t cap_addr,
-                            uint32_t msg_addr, uint32_t msg_data,
-                            unsigned int num_vector_exponent) {
+Error ConfigureMsixRegister(const Device &dev, uint8_t cap_addr, uint32_t msg_addr,
+                            uint32_t msg_data, unsigned int num_vector_exponent) {
   return MAKE_ERROR(Error::kNotImplemented);
 }
 } // namespace
@@ -213,9 +206,7 @@ uint32_t ReadBusNumbers(uint8_t bus, uint8_t device, uint8_t function) {
   return ReadData();
 }
 
-bool IsSingleFunctionDevice(uint8_t header_type) {
-  return (header_type & 0x80u) == 0;
-}
+bool IsSingleFunctionDevice(uint8_t header_type) { return (header_type & 0x80u) == 0; }
 
 Error ScanAllBus() {
   num_device = 0;
@@ -265,8 +256,7 @@ WithError<uint64_t> ReadBar(Device &device, unsigned int bar_index) {
   }
 
   const auto bar_upper = ReadConfReg(device, addr + 4);
-  return {bar | (static_cast<uint64_t>(bar_upper) << 32),
-          MAKE_ERROR(Error::kSuccess)};
+  return {bar | (static_cast<uint64_t>(bar_upper) << 32), MAKE_ERROR(Error::kSuccess)};
 }
 
 CapabilityHeader ReadCapabilityHeader(const Device &dev, uint8_t addr) {
@@ -290,20 +280,16 @@ Error ConfigureMsi(const Device &dev, uint32_t msg_addr, uint32_t msg_data,
   }
 
   if (msi_cap_addr != 0) {
-    return ConfigureMsiRegister(dev, msi_cap_addr, msg_addr, msg_data,
-                                num_vector_exponent);
+    return ConfigureMsiRegister(dev, msi_cap_addr, msg_addr, msg_data, num_vector_exponent);
   }
   if (msix_cap_addr != 0) {
-    return ConfigureMsixRegister(dev, msix_cap_addr, msg_addr, msg_data,
-                                 num_vector_exponent);
+    return ConfigureMsixRegister(dev, msix_cap_addr, msg_addr, msg_data, num_vector_exponent);
   }
   return MAKE_ERROR(Error::kNoPciMsi);
 }
 
-Error ConfigureMsiFixedDestination(const Device &dev, uint8_t apic_id,
-                                   MsiTriggerMode trigger_mode,
-                                   MsiDeliveryMode delivery_mode,
-                                   uint8_t vector,
+Error ConfigureMsiFixedDestination(const Device &dev, uint8_t apic_id, MsiTriggerMode trigger_mode,
+                                   MsiDeliveryMode delivery_mode, uint8_t vector,
                                    unsigned int num_vector_exponent) {
   uint32_t msg_addr = 0xfee00000u | (apic_id << 12);
   uint32_t msg_data = (static_cast<uint32_t>(delivery_mode) << 8) | vector;

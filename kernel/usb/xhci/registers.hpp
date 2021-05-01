@@ -84,8 +84,7 @@ union HCCPARAMS2_Bitmap {
   uint32_t data[1];
   struct {
     uint32_t u3_entry_capability : 1;
-    uint32_t
-        configure_endpoint_command_max_exit_latency_too_large_capability : 1;
+    uint32_t configure_endpoint_command_max_exit_latency_too_large_capability : 1;
     uint32_t force_save_context_capability : 1;
     uint32_t compliance_transition_capability : 1;
     uint32_t large_esit_payload_capability : 1;
@@ -167,13 +166,9 @@ union DCBAAP_Bitmap {
     uint64_t device_context_base_address_array_pointer : 26;
   } __attribute__((packed)) bits;
 
-  uint64_t Pointer() const {
-    return bits.device_context_base_address_array_pointer << 6;
-  }
+  uint64_t Pointer() const { return bits.device_context_base_address_array_pointer << 6; }
 
-  void SetPointer(uint64_t value) {
-    bits.device_context_base_address_array_pointer = value >> 6;
-  }
+  void SetPointer(uint64_t value) { bits.device_context_base_address_array_pointer = value >> 6; }
 } __attribute__((packed));
 
 union CONFIG_Bitmap {
@@ -303,13 +298,9 @@ union ERSTBA_Bitmap {
     uint64_t event_ring_segment_table_base_address : 58;
   } __attribute__((packed)) bits;
 
-  uint64_t Pointer() const {
-    return bits.event_ring_segment_table_base_address << 6;
-  }
+  uint64_t Pointer() const { return bits.event_ring_segment_table_base_address << 6; }
 
-  void SetPointer(uint64_t value) {
-    bits.event_ring_segment_table_base_address = value >> 6;
-  }
+  void SetPointer(uint64_t value) { bits.event_ring_segment_table_base_address = value >> 6; }
 } __attribute__((packed));
 
 union ERDP_Bitmap {
@@ -322,9 +313,7 @@ union ERDP_Bitmap {
 
   uint64_t Pointer() const { return bits.event_ring_dequeue_pointer << 4; }
 
-  void SetPointer(uint64_t value) {
-    bits.event_ring_dequeue_pointer = value >> 4;
-  }
+  void SetPointer(uint64_t value) { bits.event_ring_dequeue_pointer = value >> 4; }
 } __attribute__((packed));
 
 struct InterrupterRegisterSet {

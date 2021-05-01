@@ -70,8 +70,7 @@ int MostSignificantBit(uint32_t value) {
   return msb_index;
 }
 
-void InitializeEP0Context(EndpointContext &ctx, Ring *transfer_ring,
-                          unsigned int max_packet_size) {
+void InitializeEP0Context(EndpointContext &ctx, Ring *transfer_ring, unsigned int max_packet_size) {
   ctx.bits.ep_type = 4; // Control Endpoint. Bidirectional.
   ctx.bits.max_packet_size = max_packet_size;
   ctx.bits.max_burst_size = 0;
@@ -85,8 +84,7 @@ void InitializeEP0Context(EndpointContext &ctx, Ring *transfer_ring,
 
 Error ResetPort(Controller &xhc, Port &port) {
   const bool is_connected = port.IsConnected();
-  Log(kDebug, "ResetPort: port.IsConnected() = %s\n",
-      is_connected ? "true" : "false");
+  Log(kDebug, "ResetPort: port.IsConnected() = %s\n", is_connected ? "true" : "false");
 
   if (!is_connected) {
     return MAKE_ERROR(Error::kSuccess);
@@ -96,8 +94,7 @@ Error ResetPort(Controller &xhc, Port &port) {
     port_config_phase[port.Number()] = ConfigPhase::kWaitingAddressed;
   } else {
     const auto port_phase = port_config_phase[port.Number()];
-    if (port_phase != ConfigPhase::kNotConnected &&
-        port_phase != ConfigPhase::kWaitingAddressed) {
+    if (port_phase != ConfigPhase::kNotConnected && port_phase != ConfigPhase::kWaitingAddressed) {
       return MAKE_ERROR(Error::kInvalidPhase);
     }
     addressing_port = port.Number();
@@ -110,8 +107,7 @@ Error ResetPort(Controller &xhc, Port &port) {
 Error EnableSlot(Controller &xhc, Port &port) {
   const bool is_enabled = port.IsEnabled();
   const bool reset_completed = port.IsPortResetChanged();
-  Log(kDebug,
-      "EnableSlot: port.IsEnabled() = %s, port.IsPortResetChanged() = %s\n",
+  Log(kDebug, "EnableSlot: port.IsEnabled() = %s, port.IsPortResetChanged() = %s\n",
       is_enabled ? "true" : "false", reset_completed ? "true" : "false");
 
   if (is_enabled && reset_completed) {
@@ -136,8 +132,7 @@ Error AddressDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id) {
     return MAKE_ERROR(Error::kInvalidSlotID);
   }
 
-  memset(&dev->InputContext()->input_control_context, 0,
-         sizeof(InputControlContext));
+  memset(&dev->InputContext()->input_control_context, 0, sizeof(InputControlContext));
 
   const auto ep0_dci = DeviceContextIndex(0, false);
   auto slot_ctx = dev->InputContext()->EnableSlotContext();
@@ -146,9 +141,8 @@ Error AddressDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id) {
   auto port = xhc.PortAt(port_id);
   InitializeSlotContext(*slot_ctx, port);
 
-  InitializeEP0Context(
-      *ep0_ctx, dev->AllocTransferRing(ep0_dci, 32),
-      DetermineMaxPacketSizeForControlPipe(slot_ctx->bits.speed));
+  InitializeEP0Context(*ep0_ctx, dev->AllocTransferRing(ep0_dci, 32),
+                       DetermineMaxPacketSizeForControlPipe(slot_ctx->bits.speed));
 
   xhc.DeviceManager()->LoadDCBAA(slot_id);
 
@@ -162,8 +156,7 @@ Error AddressDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id) {
 }
 
 Error InitializeDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id) {
-  Log(kDebug, "InitializeDevice: port_id = %d, slot_id = %d\n", port_id,
-      slot_id);
+  Log(kDebug, "InitializeDevice: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
   auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
   if (dev == nullptr) {
@@ -177,8 +170,7 @@ Error InitializeDevice(Controller &xhc, uint8_t port_id, uint8_t slot_id) {
 }
 
 Error CompleteConfiguration(Controller &xhc, uint8_t port_id, uint8_t slot_id) {
-  Log(kDebug, "CompleteConfiguration: port_id = %d, slot_id = %d\n", port_id,
-      slot_id);
+  Log(kDebug, "CompleteConfiguration: port_id = %d, slot_id = %d\n", port_id, slot_id);
 
   auto dev = xhc.DeviceManager()->FindBySlot(slot_id);
   if (dev == nullptr) {
@@ -216,10 +208,8 @@ Error OnEvent(Controller &xhc, TransferEventTRB &trb) {
     return err;
   }
 
-  const auto port_id =
-      dev->DeviceContext()->slot_context.bits.root_hub_port_num;
-  if (dev->IsInitialized() &&
-      port_config_phase[port_id] == ConfigPhase::kInitializingDevice) {
+  const auto port_id = dev->DeviceContext()->slot_context.bits.root_hub_port_num;
+  if (dev->IsInitialized() && port_config_phase[port_id] == ConfigPhase::kInitializingDevice) {
     return ConfigureEndpoints(xhc, *dev);
   }
   return MAKE_ERROR(Error::kSuccess);
@@ -228,8 +218,8 @@ Error OnEvent(Controller &xhc, TransferEventTRB &trb) {
 Error OnEvent(Controller &xhc, CommandCompletionEventTRB &trb) {
   const auto issuer_type = trb.Pointer()->bits.trb_type;
   const auto slot_id = trb.bits.slot_id;
-  Log(kDebug, "CommandCompletionEvent: slot_id = %d, issuer = %s\n",
-      trb.bits.slot_id, kTRBTypeToName[issuer_type]);
+  Log(kDebug, "CommandCompletionEvent: slot_id = %d, issuer = %s\n", trb.bits.slot_id,
+      kTRBTypeToName[issuer_type]);
 
   if (issuer_type == EnableSlotCommandTRB::Type) {
     if (port_config_phase[addressing_port] != ConfigPhase::kEnablingSlot) {
@@ -284,17 +274,14 @@ Error OnEvent(Controller &xhc, CommandCompletionEventTRB &trb) {
 void RequestHCOwnership(uintptr_t mmio_base, HCCPARAMS1_Bitmap hccp) {
   ExtendedRegisterList extregs{mmio_base, hccp};
 
-  auto ext_usblegsup =
-      std::find_if(extregs.begin(), extregs.end(), [](auto &reg) {
-        return reg.Read().bits.capability_id == 1;
-      });
+  auto ext_usblegsup = std::find_if(extregs.begin(), extregs.end(),
+                                    [](auto &reg) { return reg.Read().bits.capability_id == 1; });
 
   if (ext_usblegsup == extregs.end()) {
     return;
   }
 
-  auto &reg =
-      reinterpret_cast<MemMapRegister<USBLEGSUP_Bitmap> &>(*ext_usblegsup);
+  auto &reg = reinterpret_cast<MemMapRegister<USBLEGSUP_Bitmap> &>(*ext_usblegsup);
   auto r = reg.Read();
   if (r.bits.hc_os_owned_semaphore) {
     return;
@@ -314,12 +301,9 @@ void RequestHCOwnership(uintptr_t mmio_base, HCCPARAMS1_Bitmap hccp) {
 namespace usb::xhci {
 
 Controller::Controller(uintptr_t mmio_base)
-    : mmio_base_{mmio_base}, cap_{reinterpret_cast<CapabilityRegisters *>(
-                                 mmio_base)},
-      op_{reinterpret_cast<OperationalRegisters *>(mmio_base +
-                                                   cap_->CAPLENGTH.Read())},
-      max_ports_{static_cast<uint8_t>(cap_->HCSPARAMS1.Read().bits.max_ports)} {
-}
+    : mmio_base_{mmio_base}, cap_{reinterpret_cast<CapabilityRegisters *>(mmio_base)},
+      op_{reinterpret_cast<OperationalRegisters *>(mmio_base + cap_->CAPLENGTH.Read())},
+      max_ports_{static_cast<uint8_t>(cap_->HCSPARAMS1.Read().bits.max_ports)} {}
 
 Error Controller::Initialize() {
   if (auto err = devmgr_.Initialize(kDeviceSize)) {
@@ -357,21 +341,16 @@ Error Controller::Initialize() {
   op_->CONFIG.Write(config);
 
   auto hcsparams2 = cap_->HCSPARAMS2.Read();
-  const uint16_t max_scratchpad_buffers =
-      hcsparams2.bits.max_scratchpad_buffers_low |
-      (hcsparams2.bits.max_scratchpad_buffers_high << 5);
+  const uint16_t max_scratchpad_buffers = hcsparams2.bits.max_scratchpad_buffers_low |
+                                          (hcsparams2.bits.max_scratchpad_buffers_high << 5);
   if (max_scratchpad_buffers > 0) {
-    auto scratchpad_buf_arr =
-        AllocArray<void *>(max_scratchpad_buffers, 64, 4096);
+    auto scratchpad_buf_arr = AllocArray<void *>(max_scratchpad_buffers, 64, 4096);
     for (int i = 0; i < max_scratchpad_buffers; ++i) {
       scratchpad_buf_arr[i] = AllocMem(4096, 4096, 4096);
-      Log(kDebug, "scratchpad buffer array %d = %p\n", i,
-          scratchpad_buf_arr[i]);
+      Log(kDebug, "scratchpad buffer array %d = %p\n", i, scratchpad_buf_arr[i]);
     }
-    devmgr_.DeviceContexts()[0] =
-        reinterpret_cast<DeviceContext *>(scratchpad_buf_arr);
-    Log(kInfo, "wrote scratchpad buffer array %p to dev ctx array 0\n",
-        scratchpad_buf_arr);
+    devmgr_.DeviceContexts()[0] = reinterpret_cast<DeviceContext *>(scratchpad_buf_arr);
+    Log(kInfo, "wrote scratchpad buffer array %p to dev ctx array 0\n", scratchpad_buf_arr);
   }
 
   DCBAAP_Bitmap dcbaap{};
@@ -431,8 +410,7 @@ Error ConfigureEndpoints(Controller &xhc, Device &dev) {
   const auto configs = dev.EndpointConfigs();
   const auto len = dev.NumEndpointConfigs();
 
-  memset(&dev.InputContext()->input_control_context, 0,
-         sizeof(InputControlContext));
+  memset(&dev.InputContext()->input_control_context, 0, sizeof(InputControlContext));
   memcpy(&dev.InputContext()->slot_context, &dev.DeviceContext()->slot_context,
          sizeof(SlotContext));
 
@@ -472,8 +450,7 @@ Error ConfigureEndpoints(Controller &xhc, Device &dev) {
       break;
     }
     ep_ctx->bits.max_packet_size = configs[i].max_packet_size;
-    ep_ctx->bits.interval =
-        convert_interval(configs[i].ep_type, configs[i].interval);
+    ep_ctx->bits.interval = convert_interval(configs[i].ep_type, configs[i].interval);
     ep_ctx->bits.average_trb_length = 1;
 
     auto tr = dev.AllocTransferRing(ep_dci, 32);

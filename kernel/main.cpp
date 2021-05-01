@@ -77,8 +77,7 @@ void SwitchEhci2Xhci(const pci::Device &xhc_dev) {
   pci::WriteConfReg(xhc_dev, 0xd8, superspeed_ports);          // USB3_PSSEN
   uint32_t ehci2xhci_ports = pci::ReadConfReg(xhc_dev, 0xd4);  // XUSB2PRM
   pci::WriteConfReg(xhc_dev, 0xd0, ehci2xhci_ports);           // XUSB2PR
-  Log(kDebug, "SwitchEhci2Xhci: SS = %02x, xHCI = %02x\n", superspeed_ports,
-      ehci2xhci_ports);
+  Log(kDebug, "SwitchEhci2Xhci: SS = %02x, xHCI = %02x\n", superspeed_ports, ehci2xhci_ports);
 }
 
 usb::xhci::Controller *xhc;
@@ -98,37 +97,29 @@ __attribute__((interrupt)) void IntHandlerXhci(InterruptFrame *frame) {
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
-extern "C" void
-KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
-                   const MemoryMap &memory_map_ref) {
+extern "C" void KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
+                                   const MemoryMap &memory_map_ref) {
   FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
   MemoryMap memory_map{memory_map_ref};
 
   switch (frame_buffer_config.pixel_format) {
   case kPixelRgbResv8BitPerColor:
-    pixel_writer = new (pixel_writer_buf)
-        RgbResv8BitPerColorPixelWriter(frame_buffer_config);
+    pixel_writer = new (pixel_writer_buf) RgbResv8BitPerColorPixelWriter(frame_buffer_config);
     break;
   case kPixelBgrResv8BitPerColor:
-    pixel_writer = new (pixel_writer_buf)
-        BgrResv8BitPerColorPixelWriter(frame_buffer_config);
+    pixel_writer = new (pixel_writer_buf) BgrResv8BitPerColorPixelWriter(frame_buffer_config);
     break;
   }
 
   const int kFrameWidth = frame_buffer_config.horizontal_resolution;
   const int kFrameHeight = frame_buffer_config.vertical_resolution;
 
-  FillRectangle(*pixel_writer, {0, 0}, {kFrameWidth, kFrameHeight - 50},
-                kDesktopBgColor);
-  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth, 50},
-                {1, 8, 17});
-  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth / 5, 50},
-                {80, 80, 80});
-  DrawRectangle(*pixel_writer, {10, kFrameHeight - 40}, {30, 30},
-                {160, 160, 160});
+  FillRectangle(*pixel_writer, {0, 0}, {kFrameWidth, kFrameHeight - 50}, kDesktopBgColor);
+  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth, 50}, {1, 8, 17});
+  FillRectangle(*pixel_writer, {0, kFrameHeight - 50}, {kFrameWidth / 5, 50}, {80, 80, 80});
+  DrawRectangle(*pixel_writer, {10, kFrameHeight - 40}, {30, 30}, {160, 160, 160});
 
-  console = new (console_buf)
-      Console{*pixel_writer, kDesktopFgColor, kDesktopBgColor};
+  console = new (console_buf) Console{*pixel_writer, kDesktopFgColor, kDesktopBgColor};
   printk("Welcome to MikanOS!\n");
   SetLogLevel(kWarn);
 
@@ -145,31 +136,25 @@ KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
 
   const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
   uintptr_t available_end = 0;
-  for (uintptr_t iter = memory_map_base;
-       iter < memory_map_base + memory_map.map_size;
+  for (uintptr_t iter = memory_map_base; iter < memory_map_base + memory_map.map_size;
        iter += memory_map.descriptor_size) {
     auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
     if (available_end < desc->physical_start) {
       memory_manager->MarkAllocated(FrameId{available_end / kBytesPerFrame},
-                                    (desc->physical_start - available_end) /
-                                        kBytesPerFrame);
+                                    (desc->physical_start - available_end) / kBytesPerFrame);
     }
 
-    const auto physical_end =
-        desc->physical_start + desc->number_of_pages * kUefiPageSize;
+    const auto physical_end = desc->physical_start + desc->number_of_pages * kUefiPageSize;
     if (IsAvailable(static_cast<MemoryType>(desc->type))) {
       available_end = physical_end;
     } else {
-      memory_manager->MarkAllocated(
-          FrameId{desc->physical_start / kBytesPerFrame},
-          desc->number_of_pages * kUefiPageSize / kBytesPerFrame);
+      memory_manager->MarkAllocated(FrameId{desc->physical_start / kBytesPerFrame},
+                                    desc->number_of_pages * kUefiPageSize / kBytesPerFrame);
     }
   }
-  memory_manager->SetMemoryRange(FrameId{1},
-                                 FrameId{available_end / kBytesPerFrame});
+  memory_manager->SetMemoryRange(FrameId{1}, FrameId{available_end / kBytesPerFrame});
 
-  mouse_cursor = new (mouse_cursor_buf)
-      MouseCursor{pixel_writer, kDesktopBgColor, {300, 200}};
+  mouse_cursor = new (mouse_cursor_buf) MouseCursor{pixel_writer, kDesktopBgColor, {300, 200}};
 
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue(main_queue_data);
@@ -182,8 +167,8 @@ KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
     const auto &dev = pci::devices[i];
     auto vendor_id = pci::ReadVendorId(dev);
     auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n", dev.bus,
-        dev.device, dev.function, vendor_id, class_code, dev.header_type);
+    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n", dev.bus, dev.device, dev.function,
+        vendor_id, class_code, dev.header_type);
   }
 
   // Intel 製を優先して xHC を探す
@@ -199,20 +184,16 @@ KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
   }
 
   if (xhc_dev != nullptr) {
-    Log(kInfo, "xHC has been found: %d.%d.%d\n", xhc_dev->bus, xhc_dev->device,
-        xhc_dev->function);
+    Log(kInfo, "xHC has been found: %d.%d.%d\n", xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
 
-  SetIdtEntry(idt[InterruptVector::kXhci],
-              MakeIdtAttr(DescriptorType::kInterruptGate, 0),
+  SetIdtEntry(idt[InterruptVector::kXhci], MakeIdtAttr(DescriptorType::kInterruptGate, 0),
               reinterpret_cast<uint64_t>(IntHandlerXhci), kernel_cs);
   LoadIdt(sizeof(idt) - 1, reinterpret_cast<uintptr_t>(&idt[0]));
 
-  const uint8_t bsp_local_apic_id =
-      *reinterpret_cast<const uint32_t *>(0xfee00020) >> 24;
-  pci::ConfigureMsiFixedDestination(
-      *xhc_dev, bsp_local_apic_id, pci::MsiTriggerMode::kLevel,
-      pci::MsiDeliveryMode::kFixed, InterruptVector::kXhci, 0);
+  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t *>(0xfee00020) >> 24;
+  pci::ConfigureMsiFixedDestination(*xhc_dev, bsp_local_apic_id, pci::MsiTriggerMode::kLevel,
+                                    pci::MsiDeliveryMode::kFixed, InterruptVector::kXhci, 0);
 
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
@@ -242,8 +223,7 @@ KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
 
     if (port.IsConnected()) {
       if (auto err = ConfigurePort(xhc, port)) {
-        Log(kError, "failed to configure port: %s at %s:%d\n", err.Name(),
-            err.File(), err.Line());
+        Log(kError, "failed to configure port: %s at %s:%d\n", err.Name(), err.File(), err.Line());
         continue;
       }
     }
@@ -264,8 +244,8 @@ KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_ref,
     case Message::kInterruptXhci:
       while (xhc.PrimaryEventRing()->HasFront()) {
         if (auto err = ProcessEvent(xhc)) {
-          Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(),
-              err.File(), err.Line());
+          Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(),
+              err.Line());
         }
       }
       break;

@@ -27,8 +27,7 @@ void *AllocMem(size_t size, unsigned int alignment, unsigned int boundary) {
     }
   }
 
-  if (reinterpret_cast<uintptr_t>(memory_pool) + kMemoryPoolSize <
-      alloc_ptr + size) {
+  if (reinterpret_cast<uintptr_t>(memory_pool) + kMemoryPoolSize < alloc_ptr + size) {
     return nullptr;
   }
 

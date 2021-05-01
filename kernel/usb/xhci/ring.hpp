@@ -30,9 +30,7 @@ public:
    *
    * @return 追加された（リング上の）TRB を指すポインタ．
    */
-  template <typename TRBType> TRB *Push(const TRBType &trb) {
-    return Push(trb.data);
-  }
+  template <typename TRBType> TRB *Push(const TRBType &trb) { return Push(trb.data); }
 
   TRB *Buffer() const { return buf_; }
 

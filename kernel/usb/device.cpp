@@ -40,28 +40,22 @@ usb::EndpointConfig MakeEPConfig(const usb::EndpointDescriptor &ep_desc) {
   usb::EndpointConfig conf;
   conf.ep_id = usb::EndpointID{ep_desc.endpoint_address.bits.number,
                                ep_desc.endpoint_address.bits.dir_in == 1};
-  conf.ep_type =
-      static_cast<usb::EndpointType>(ep_desc.attributes.bits.transfer_type);
+  conf.ep_type = static_cast<usb::EndpointType>(ep_desc.attributes.bits.transfer_type);
   conf.max_packet_size = ep_desc.max_packet_size;
   conf.interval = ep_desc.interval;
   return conf;
 }
 
-usb::ClassDriver *NewClassDriver(usb::Device *dev,
-                                 const usb::InterfaceDescriptor &if_desc) {
-  if (if_desc.interface_class == 3 &&
-      if_desc.interface_sub_class == 1) {  // HID boot interface
-    if (if_desc.interface_protocol == 1) { // keyboard
-      auto keyboard_driver =
-          new usb::HIDKeyboardDriver{dev, if_desc.interface_number};
+usb::ClassDriver *NewClassDriver(usb::Device *dev, const usb::InterfaceDescriptor &if_desc) {
+  if (if_desc.interface_class == 3 && if_desc.interface_sub_class == 1) { // HID boot interface
+    if (if_desc.interface_protocol == 1) {                                // keyboard
+      auto keyboard_driver = new usb::HIDKeyboardDriver{dev, if_desc.interface_number};
       if (usb::HIDKeyboardDriver::default_observer) {
-        keyboard_driver->SubscribeKeyPush(
-            usb::HIDKeyboardDriver::default_observer);
+        keyboard_driver->SubscribeKeyPush(usb::HIDKeyboardDriver::default_observer);
       }
       return keyboard_driver;
     } else if (if_desc.interface_protocol == 2) { // mouse
-      auto mouse_driver =
-          new usb::HIDMouseDriver{dev, if_desc.interface_number};
+      auto mouse_driver = new usb::HIDMouseDriver{dev, if_desc.interface_number};
       if (usb::HIDMouseDriver::default_observer) {
         mouse_driver->SubscribeMouseMove(usb::HIDMouseDriver::default_observer);
       }
@@ -72,9 +66,8 @@ usb::ClassDriver *NewClassDriver(usb::Device *dev,
 }
 
 void Log(LogLevel level, const usb::InterfaceDescriptor &if_desc) {
-  Log(level, "Interface Descriptor: class=%d, sub=%d, protocol=%d\n",
-      if_desc.interface_class, if_desc.interface_sub_class,
-      if_desc.interface_protocol);
+  Log(level, "Interface Descriptor: class=%d, sub=%d, protocol=%d\n", if_desc.interface_class,
+      if_desc.interface_sub_class, if_desc.interface_protocol);
 }
 
 void Log(LogLevel level, const usb::EndpointConfig &conf) {
@@ -85,11 +78,10 @@ void Log(LogLevel level, const usb::EndpointConfig &conf) {
 }
 
 void Log(LogLevel level, const usb::HIDDescriptor &hid_desc) {
-  Log(level, "HID Descriptor: release=0x%02x, num_desc=%d",
-      hid_desc.hid_release, hid_desc.num_descriptors);
+  Log(level, "HID Descriptor: release=0x%02x, num_desc=%d", hid_desc.hid_release,
+      hid_desc.num_descriptors);
   for (int i = 0; i < hid_desc.num_descriptors; ++i) {
-    Log(level, ", desc_type=%d, len=%d",
-        hid_desc.GetClassDescriptor(i)->descriptor_type,
+    Log(level, ", desc_type=%d, len=%d", hid_desc.GetClassDescriptor(i)->descriptor_type,
         hid_desc.GetClassDescriptor(i)->descriptor_length);
   }
   Log(level, "\n");
@@ -99,16 +91,16 @@ void Log(LogLevel level, const usb::HIDDescriptor &hid_desc) {
 namespace usb {
 Device::~Device() {}
 
-Error Device::ControlIn(EndpointID ep_id, SetupData setup_data, void *buf,
-                        int len, ClassDriver *issuer) {
+Error Device::ControlIn(EndpointID ep_id, SetupData setup_data, void *buf, int len,
+                        ClassDriver *issuer) {
   if (issuer) {
     event_waiters_.Put(setup_data, issuer);
   }
   return MAKE_ERROR(Error::kSuccess);
 }
 
-Error Device::ControlOut(EndpointID ep_id, SetupData setup_data,
-                         const void *buf, int len, ClassDriver *issuer) {
+Error Device::ControlOut(EndpointID ep_id, SetupData setup_data, const void *buf, int len,
+                         ClassDriver *issuer) {
   if (issuer) {
     event_waiters_.Put(setup_data, issuer);
   }
@@ -126,8 +118,8 @@ Error Device::InterruptOut(EndpointID ep_id, void *buf, int len) {
 Error Device::StartInitialize() {
   is_initialized_ = false;
   initialize_phase_ = 1;
-  return GetDescriptor(*this, kDefaultControlPipeID, DeviceDescriptor::kType, 0,
-                       buf_.data(), buf_.size(), true);
+  return GetDescriptor(*this, kDefaultControlPipeID, DeviceDescriptor::kType, 0, buf_.data(),
+                       buf_.size(), true);
 }
 
 Error Device::OnEndpointsConfigured() {
@@ -141,10 +133,9 @@ Error Device::OnEndpointsConfigured() {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-Error Device::OnControlCompleted(EndpointID ep_id, SetupData setup_data,
-                                 const void *buf, int len) {
-  Log(kDebug, "Device::OnControlCompleted: buf 0x%08x, len %d, dir %d\n", buf,
-      len, setup_data.request_type.bits.direction);
+Error Device::OnControlCompleted(EndpointID ep_id, SetupData setup_data, const void *buf, int len) {
+  Log(kDebug, "Device::OnControlCompleted: buf 0x%08x, len %d, dir %d\n", buf, len,
+      setup_data.request_type.bits.direction);
   if (is_initialized_) {
     if (auto w = event_waiters_.Get(setup_data)) {
       return w.value()->OnControlCompleted(ep_id, setup_data, buf, len);
@@ -189,8 +180,7 @@ Error Device::InitializePhase1(const uint8_t *buf, int len) {
   config_index_ = 0;
   initialize_phase_ = 2;
   Log(kDebug, "issuing GetDesc(Config): index=%d)\n", config_index_);
-  return GetDescriptor(*this, kDefaultControlPipeID,
-                       ConfigurationDescriptor::kType, config_index_,
+  return GetDescriptor(*this, kDefaultControlPipeID, ConfigurationDescriptor::kType, config_index_,
                        buf_.data(), buf_.size(), true);
 }
 
@@ -234,10 +224,8 @@ Error Device::InitializePhase2(const uint8_t *buf, int len) {
     return MAKE_ERROR(Error::kSuccess);
   }
   initialize_phase_ = 3;
-  Log(kDebug, "issuing SetConfiguration: conf_val=%d\n",
-      conf_desc->configuration_value);
-  return SetConfiguration(*this, kDefaultControlPipeID,
-                          conf_desc->configuration_value, true);
+  Log(kDebug, "issuing SetConfiguration: conf_val=%d\n", conf_desc->configuration_value);
+  return SetConfiguration(*this, kDefaultControlPipeID, conf_desc->configuration_value, true);
 }
 
 Error Device::InitializePhase3(uint8_t config_value) {
@@ -249,8 +237,8 @@ Error Device::InitializePhase3(uint8_t config_value) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-Error GetDescriptor(Device &dev, EndpointID ep_id, uint8_t desc_type,
-                    uint8_t desc_index, void *buf, int len, bool debug) {
+Error GetDescriptor(Device &dev, EndpointID ep_id, uint8_t desc_type, uint8_t desc_index, void *buf,
+                    int len, bool debug) {
   SetupData setup_data{};
   setup_data.request_type.bits.direction = request_type::kIn;
   setup_data.request_type.bits.type = request_type::kStandard;
@@ -262,8 +250,7 @@ Error GetDescriptor(Device &dev, EndpointID ep_id, uint8_t desc_type,
   return dev.ControlIn(ep_id, setup_data, buf, len, nullptr);
 }
 
-Error SetConfiguration(Device &dev, EndpointID ep_id, uint8_t config_value,
-                       bool debug) {
+Error SetConfiguration(Device &dev, EndpointID ep_id, uint8_t config_value, bool debug) {
   SetupData setup_data{};
   setup_data.request_type.bits.direction = request_type::kOut;
   setup_data.request_type.bits.type = request_type::kStandard;

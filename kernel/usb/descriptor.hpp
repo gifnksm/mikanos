@@ -112,8 +112,7 @@ struct HIDDescriptor {
     if (index >= num_descriptors) {
       return nullptr;
     }
-    const auto end_of_struct =
-        reinterpret_cast<uintptr_t>(this) + sizeof(HIDDescriptor);
+    const auto end_of_struct = reinterpret_cast<uintptr_t>(this) + sizeof(HIDDescriptor);
     return reinterpret_cast<ClassDescriptor *>(end_of_struct) + index;
   }
 } __attribute__((packed));

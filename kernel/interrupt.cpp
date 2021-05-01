@@ -8,8 +8,8 @@
 
 std::array<InterruptDescriptor, 256> idt;
 
-void SetIdtEntry(InterruptDescriptor &desc, InterruptDescriptorAttribute attr,
-                 uint64_t offset, uint16_t segment_selector) {
+void SetIdtEntry(InterruptDescriptor &desc, InterruptDescriptorAttribute attr, uint64_t offset,
+                 uint16_t segment_selector) {
   desc.attr = attr;
   desc.offset_low = offset & 0xffffu;
   desc.offset_middle = (offset >> 16) & 0xffffu;

@@ -39,9 +39,7 @@ enum class MemoryType {
   kEfiMaxMemoryType
 };
 
-inline bool operator==(uint32_t lhs, MemoryType rhs) {
-  return lhs == static_cast<uint32_t>(rhs);
-}
+inline bool operator==(uint32_t lhs, MemoryType rhs) { return lhs == static_cast<uint32_t>(rhs); }
 
 inline bool operator==(MemoryType lhs, uint32_t rhs) { return rhs == lhs; }
 

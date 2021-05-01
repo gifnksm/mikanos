@@ -34,9 +34,10 @@ struct InterruptDescriptor {
 
 extern std::array<InterruptDescriptor, 256> idt;
 
-constexpr InterruptDescriptorAttribute
-MakeIdtAttr(DescriptorType type, uint8_t descriptor_privilege_level,
-            bool present = true, uint8_t interrupt_stack_table = 0) {
+constexpr InterruptDescriptorAttribute MakeIdtAttr(DescriptorType type,
+                                                   uint8_t descriptor_privilege_level,
+                                                   bool present = true,
+                                                   uint8_t interrupt_stack_table = 0) {
   InterruptDescriptorAttribute attr{};
   attr.bits.interrupt_stack_table = interrupt_stack_table;
   attr.bits.type = type;
@@ -45,8 +46,8 @@ MakeIdtAttr(DescriptorType type, uint8_t descriptor_privilege_level,
   return attr;
 }
 
-void SetIdtEntry(InterruptDescriptor &desc, InterruptDescriptorAttribute attr,
-                 uint64_t offset, uint16_t segment_selector);
+void SetIdtEntry(InterruptDescriptor &desc, InterruptDescriptorAttribute attr, uint64_t offset,
+                 uint16_t segment_selector);
 
 class InterruptVector {
 public:

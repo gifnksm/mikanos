@@ -43,8 +43,7 @@ void DrawMouseCursor(PixelWriter *pixel_writer, Vector2D<int> position) {
   }
 }
 
-void EraseMouseCursor(PixelWriter *pixel_writer, Vector2D<int> position,
-                      PixelColor erase_color) {
+void EraseMouseCursor(PixelWriter *pixel_writer, Vector2D<int> position, PixelColor erase_color) {
   for (int dy = 0; dy < kMouseCursorHeight; ++dy) {
     for (int dx = 0; dx < kMouseCursorWidth; ++dx) {
       if (mouse_cursor_shape[dy][dx] != ' ') {
@@ -57,8 +56,7 @@ void EraseMouseCursor(PixelWriter *pixel_writer, Vector2D<int> position,
 
 MouseCursor::MouseCursor(PixelWriter *writer, PixelColor erase_color,
                          Vector2D<int> initial_position)
-    : pixel_writer_{writer}, erase_color_{erase_color}, position_{
-                                                            initial_position} {
+    : pixel_writer_{writer}, erase_color_{erase_color}, position_{initial_position} {
   DrawMouseCursor(pixel_writer_, position_);
 }
 

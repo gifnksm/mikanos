@@ -60,9 +60,7 @@ union EndpointContext {
     uint32_t max_esit_payload_lo : 16;
   } __attribute__((packed)) bits;
 
-  TRB *TransferRingBuffer() const {
-    return reinterpret_cast<TRB *>(bits.tr_dequeue_pointer << 4);
-  }
+  TRB *TransferRingBuffer() const { return reinterpret_cast<TRB *>(bits.tr_dequeue_pointer << 4); }
 
   void SetTransferRingBuffer(TRB *buffer) {
     bits.tr_dequeue_pointer = reinterpret_cast<uint64_t>(buffer) >> 4;
@@ -75,8 +73,7 @@ struct DeviceContextIndex {
   explicit DeviceContextIndex(int dci) : value{dci} {}
   DeviceContextIndex(EndpointID ep_id) : value{ep_id.Address()} {}
 
-  DeviceContextIndex(int ep_num, bool dir_in)
-      : value{2 * ep_num + (ep_num == 0 ? 1 : dir_in)} {}
+  DeviceContextIndex(int ep_num, bool dir_in) : value{2 * ep_num + (ep_num == 0 ? 1 : dir_in)} {}
 
   DeviceContextIndex(const DeviceContextIndex &rhs) = default;
   DeviceContextIndex &operator=(const DeviceContextIndex &rhs) = default;

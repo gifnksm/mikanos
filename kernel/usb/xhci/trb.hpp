@@ -53,13 +53,9 @@ union NormalTRB {
 
   NormalTRB() { bits.trb_type = Type; }
 
-  void *Pointer() const {
-    return reinterpret_cast<TRB *>(bits.data_buffer_pointer);
-  }
+  void *Pointer() const { return reinterpret_cast<TRB *>(bits.data_buffer_pointer); }
 
-  void SetPointer(const void *p) {
-    bits.data_buffer_pointer = reinterpret_cast<uint64_t>(p);
-  }
+  void SetPointer(const void *p) { bits.data_buffer_pointer = reinterpret_cast<uint64_t>(p); }
 };
 
 union SetupStageTRB {
@@ -123,13 +119,9 @@ union DataStageTRB {
 
   DataStageTRB() { bits.trb_type = Type; }
 
-  void *Pointer() const {
-    return reinterpret_cast<void *>(bits.data_buffer_pointer);
-  }
+  void *Pointer() const { return reinterpret_cast<void *>(bits.data_buffer_pointer); }
 
-  void SetPointer(const void *p) {
-    bits.data_buffer_pointer = reinterpret_cast<uint64_t>(p);
-  }
+  void SetPointer(const void *p) { bits.data_buffer_pointer = reinterpret_cast<uint64_t>(p); }
 };
 
 union StatusStageTRB {
@@ -180,13 +172,9 @@ union LinkTRB {
     SetPointer(ring_segment_pointer);
   }
 
-  TRB *Pointer() const {
-    return reinterpret_cast<TRB *>(bits.ring_segment_pointer << 4);
-  }
+  TRB *Pointer() const { return reinterpret_cast<TRB *>(bits.ring_segment_pointer << 4); }
 
-  void SetPointer(const TRB *p) {
-    bits.ring_segment_pointer = reinterpret_cast<uint64_t>(p) >> 4;
-  }
+  void SetPointer(const TRB *p) { bits.ring_segment_pointer = reinterpret_cast<uint64_t>(p) >> 4; }
 };
 
 union NoOpTRB {
@@ -280,8 +268,7 @@ union ConfigureEndpointCommandTRB {
     uint32_t slot_id : 8;
   } __attribute__((packed)) bits;
 
-  ConfigureEndpointCommandTRB(const InputContext *input_context,
-                              uint8_t slot_id) {
+  ConfigureEndpointCommandTRB(const InputContext *input_context, uint8_t slot_id) {
     bits.trb_type = Type;
     bits.slot_id = slot_id;
     SetPointer(input_context);
@@ -366,9 +353,7 @@ union TransferEventTRB {
 
   TRB *Pointer() const { return reinterpret_cast<TRB *>(bits.trb_pointer); }
 
-  void SetPointer(const TRB *p) {
-    bits.trb_pointer = reinterpret_cast<uint64_t>(p);
-  }
+  void SetPointer(const TRB *p) { bits.trb_pointer = reinterpret_cast<uint64_t>(p); }
 
   EndpointID EndpointID() const { return usb::EndpointID{bits.endpoint_id}; }
 };
@@ -392,13 +377,9 @@ union CommandCompletionEventTRB {
 
   CommandCompletionEventTRB() { bits.trb_type = Type; }
 
-  TRB *Pointer() const {
-    return reinterpret_cast<TRB *>(bits.command_trb_pointer << 4);
-  }
+  TRB *Pointer() const { return reinterpret_cast<TRB *>(bits.command_trb_pointer << 4); }
 
-  void SetPointer(TRB *p) {
-    bits.command_trb_pointer = reinterpret_cast<uint64_t>(p) >> 4;
-  }
+  void SetPointer(TRB *p) { bits.command_trb_pointer = reinterpret_cast<uint64_t>(p) >> 4; }
 };
 
 union PortStatusChangeEventTRB {

@@ -13,17 +13,11 @@
 #include <limits>
 
 namespace {
-constexpr unsigned long long operator""_KiB(unsigned long long kib) {
-  return kib * 1024;
-}
+constexpr unsigned long long operator""_KiB(unsigned long long kib) { return kib * 1024; }
 
-constexpr unsigned long long operator""_MiB(unsigned long long mib) {
-  return mib * 1024_KiB;
-}
+constexpr unsigned long long operator""_MiB(unsigned long long mib) { return mib * 1024_KiB; }
 
-constexpr unsigned long long operator""_GiB(unsigned long long gib) {
-  return gib * 1024_MiB;
-}
+constexpr unsigned long long operator""_GiB(unsigned long long gib) { return gib * 1024_MiB; }
 } // namespace
 
 /** @brief 物理メモリフレーム 1 つの大きさ（バイト） */
@@ -52,8 +46,7 @@ class BitmapMemoryManager {
 public:
   /** @brief このメモリ管理クラスで扱える最大の物理メモリ量（バイト） */
   static const auto kMaxPhysicalMemoryBytes{128_GiB};
-  /** @brief kMaxPhysicalMemoryBytes
-   * までの物理メモリを扱うために必要なフレーム数 */
+  /** @brief kMaxPhysicalMemoryBytes までの物理メモリを扱うために必要なフレーム数 */
   static const auto kFrameCount{kMaxPhysicalMemoryBytes / kBytesPerFrame};
 
   /** @brief ビットマップ配列の要素型 */
@@ -70,8 +63,7 @@ public:
   void MarkAllocated(FrameId start_frame, size_t num_frames);
 
   /** @brief このメモリマネージャで扱うメモリ範囲を設定する．
-   * この呼び出し以降，Allocate
-   * によるメモリ割り当ては設定された範囲内でのみ行われる．
+   * この呼び出し以降，Allocate によるメモリ割り当ては設定された範囲内でのみ行われる．
    *
    * @param range_begin_ メモリ範囲の始点
    * @param range_end_   メモリ範囲の終点．最終フレームの次のフレーム．
@@ -82,8 +74,7 @@ private:
   std::array<MapLineType, kFrameCount / kBitsPerMapLine> alloc_map_;
   /** @brief このメモリマネージャで扱うメモリ範囲の始点． */
   FrameId range_begin_;
-  /** @brief
-   * このメモリマネージャで扱うメモリ範囲の終点．最終フレームの次のフレーム． */
+  /** @brief このメモリマネージャで扱うメモリ範囲の終点．最終フレームの次のフレーム． */
   FrameId range_end_;
 
   bool GetBit(FrameId frame) const;

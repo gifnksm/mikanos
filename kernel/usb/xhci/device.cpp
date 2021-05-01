@@ -29,16 +29,15 @@ DataStageTRB MakeDataStageTRB(const void *buf, int len, bool dir_in) {
 
 void Log(LogLevel level, const DataStageTRB &trb) {
   Log(level, "DataStageTRB: len %d, buf 0x%08lx, dir %d, attr 0x%02x\n",
-      trb.bits.trb_transfer_length, trb.bits.data_buffer_pointer,
-      trb.bits.direction, trb.data[3] & 0x7fu);
+      trb.bits.trb_transfer_length, trb.bits.data_buffer_pointer, trb.bits.direction,
+      trb.data[3] & 0x7fu);
 }
 
 void Log(LogLevel level, const SetupStageTRB &trb) {
   Log(level,
       "  SetupStage TRB: req_type %02x, req %02x, val %02x, ind %02x, len "
       "%02x\n",
-      trb.bits.request_type, trb.bits.request, trb.bits.value, trb.bits.index,
-      trb.bits.length);
+      trb.bits.request_type, trb.bits.request, trb.bits.value, trb.bits.index, trb.bits.length);
 }
 
 void Log(LogLevel level, const TransferEventTRB &trb) {
@@ -47,18 +46,15 @@ void Log(LogLevel level, const TransferEventTRB &trb) {
         "Transfer (value %08lx) completed: %s, residual length %d, slot %d, ep "
         "addr %d\n",
         reinterpret_cast<uint64_t>(trb.Pointer()),
-        kTRBCompletionCodeToName[trb.bits.completion_code],
-        trb.bits.trb_transfer_length, trb.bits.slot_id,
-        trb.EndpointID().Address());
+        kTRBCompletionCodeToName[trb.bits.completion_code], trb.bits.trb_transfer_length,
+        trb.bits.slot_id, trb.EndpointID().Address());
     return;
   }
 
   TRB *issuer_trb = trb.Pointer();
   Log(level, "%s completed: %s, residual length %d, slot %d, ep addr %d\n",
-      kTRBTypeToName[issuer_trb->bits.trb_type],
-      kTRBCompletionCodeToName[trb.bits.completion_code],
-      trb.bits.trb_transfer_length, trb.bits.slot_id,
-      trb.EndpointID().Address());
+      kTRBTypeToName[issuer_trb->bits.trb_type], kTRBCompletionCodeToName[trb.bits.completion_code],
+      trb.bits.trb_transfer_length, trb.bits.slot_id, trb.EndpointID().Address());
   if (auto data_trb = TRBDynamicCast<DataStageTRB>(issuer_trb)) {
     Log(level, "  ");
     Log(level, *data_trb);
@@ -70,8 +66,7 @@ void Log(LogLevel level, const TransferEventTRB &trb) {
 } // namespace
 
 namespace usb::xhci {
-Device::Device(uint8_t slot_id, DoorbellRegister *dbreg)
-    : slot_id_{slot_id}, dbreg_{dbreg} {}
+Device::Device(uint8_t slot_id, DoorbellRegister *dbreg) : slot_id_{slot_id}, dbreg_{dbreg} {}
 
 Error Device::Initialize() {
   state_ = State::kBlank;
@@ -94,14 +89,13 @@ Ring *Device::AllocTransferRing(DeviceContextIndex index, size_t buf_size) {
   return tr;
 }
 
-Error Device::ControlIn(EndpointID ep_id, SetupData setup_data, void *buf,
-                        int len, ClassDriver *issuer) {
+Error Device::ControlIn(EndpointID ep_id, SetupData setup_data, void *buf, int len,
+                        ClassDriver *issuer) {
   if (auto err = usb::Device::ControlIn(ep_id, setup_data, buf, len, issuer)) {
     return err;
   }
 
-  Log(kDebug, "Device::ControlIn: ep addr %d, buf 0x%08x, len %d\n",
-      ep_id.Address(), buf, len);
+  Log(kDebug, "Device::ControlIn: ep addr %d, buf 0x%08x, len %d\n", ep_id.Address(), buf, len);
   if (ep_id.Number() < 0 || 15 < ep_id.Number()) {
     return MAKE_ERROR(Error::kInvalidEndpointNumber);
   }
@@ -141,14 +135,13 @@ Error Device::ControlIn(EndpointID ep_id, SetupData setup_data, void *buf,
   return MAKE_ERROR(Error::kSuccess);
 }
 
-Error Device::ControlOut(EndpointID ep_id, SetupData setup_data,
-                         const void *buf, int len, ClassDriver *issuer) {
+Error Device::ControlOut(EndpointID ep_id, SetupData setup_data, const void *buf, int len,
+                         ClassDriver *issuer) {
   if (auto err = usb::Device::ControlOut(ep_id, setup_data, buf, len, issuer)) {
     return err;
   }
 
-  Log(kDebug, "Device::ControlOut: ep addr %d, buf 0x%08x, len %d\n",
-      ep_id.Address(), buf, len);
+  Log(kDebug, "Device::ControlOut: ep addr %d, buf 0x%08x, len %d\n", ep_id.Address(), buf, len);
   if (ep_id.Number() < 0 || 15 < ep_id.Number()) {
     return MAKE_ERROR(Error::kInvalidEndpointNumber);
   }
@@ -217,9 +210,8 @@ Error Device::InterruptOut(EndpointID ep_id, void *buf, int len) {
     return err;
   }
 
-  Log(kDebug,
-      "Device::InterrutpOut: ep addr %d, buf %08lx, len %d, dev %08lx\n",
-      ep_id.Address(), buf, len, this);
+  Log(kDebug, "Device::InterrutpOut: ep addr %d, buf %08lx, len %d, dev %08lx\n", ep_id.Address(),
+      buf, len, this);
   return MAKE_ERROR(Error::kNotImplemented);
 }
 
@@ -235,10 +227,8 @@ Error Device::OnTransferEventReceived(const TransferEventTRB &trb) {
 
   TRB *issuer_trb = trb.Pointer();
   if (auto normal_trb = TRBDynamicCast<NormalTRB>(issuer_trb)) {
-    const auto transfer_length =
-        normal_trb->bits.trb_transfer_length - residual_length;
-    return this->OnInterruptCompleted(trb.EndpointID(), normal_trb->Pointer(),
-                                      transfer_length);
+    const auto transfer_length = normal_trb->bits.trb_transfer_length - residual_length;
+    return this->OnInterruptCompleted(trb.EndpointID(), normal_trb->Pointer(), transfer_length);
   }
 
   auto opt_setup_stage_trb = setup_stage_map_.Get(issuer_trb);
@@ -264,15 +254,12 @@ Error Device::OnTransferEventReceived(const TransferEventTRB &trb) {
   int transfer_length{0};
   if (auto data_stage_trb = TRBDynamicCast<DataStageTRB>(issuer_trb)) {
     data_stage_buffer = data_stage_trb->Pointer();
-    transfer_length =
-        data_stage_trb->bits.trb_transfer_length - residual_length;
-  } else if (auto status_stage_trb =
-                 TRBDynamicCast<StatusStageTRB>(issuer_trb)) {
+    transfer_length = data_stage_trb->bits.trb_transfer_length - residual_length;
+  } else if (auto status_stage_trb = TRBDynamicCast<StatusStageTRB>(issuer_trb)) {
     // pass
   } else {
     return MAKE_ERROR(Error::kNotImplemented);
   }
-  return this->OnControlCompleted(trb.EndpointID(), setup_data,
-                                  data_stage_buffer, transfer_length);
+  return this->OnControlCompleted(trb.EndpointID(), setup_data, data_stage_buffer, transfer_length);
 }
 } // namespace usb::xhci

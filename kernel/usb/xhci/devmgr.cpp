@@ -11,8 +11,7 @@ Error DeviceManager::Initialize(size_t max_slots) {
     return MAKE_ERROR(Error::kNoEnoughMemory);
   }
 
-  device_context_pointers_ =
-      AllocArray<DeviceContext *>(max_slots_ + 1, 64, 4096);
+  device_context_pointers_ = AllocArray<DeviceContext *>(max_slots_ + 1, 64, 4096);
   if (device_context_pointers_ == nullptr) {
     FreeMem(devices_);
     return MAKE_ERROR(Error::kNoEnoughMemory);
@@ -26,12 +25,9 @@ Error DeviceManager::Initialize(size_t max_slots) {
   return MAKE_ERROR(Error::kSuccess);
 }
 
-DeviceContext **DeviceManager::DeviceContexts() const {
-  return device_context_pointers_;
-}
+DeviceContext **DeviceManager::DeviceContexts() const { return device_context_pointers_; }
 
-Device *DeviceManager::FindByPort(uint8_t port_num,
-                                  uint32_t route_string) const {
+Device *DeviceManager::FindByPort(uint8_t port_num, uint32_t route_string) const {
   for (size_t i = 1; i <= max_slots_; ++i) {
     auto dev = devices_[i];
     if (dev == nullptr)

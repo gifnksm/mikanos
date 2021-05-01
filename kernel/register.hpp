@@ -11,9 +11,7 @@
 
 template <typename T> struct ArrayLength {};
 
-template <typename T, size_t N> struct ArrayLength<T[N]> {
-  static const size_t value = N;
-};
+template <typename T, size_t N> struct ArrayLength<T[N]> { static const size_t value = N; };
 
 /**
  * MemMapRegister is a wrapper for a memory mapped register.
