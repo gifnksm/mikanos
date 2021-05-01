@@ -2,6 +2,8 @@
 
 #include "usb/memory.hpp"
 
+#include <cstring>
+
 namespace usb::xhci {
 Ring::~Ring() {
   if (buf_ != nullptr) {

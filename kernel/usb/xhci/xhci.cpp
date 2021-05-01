@@ -6,6 +6,8 @@
 #include "usb/setupdata.hpp"
 #include "usb/xhci/speed.hpp"
 
+#include <cstring>
+
 namespace {
 using namespace usb::xhci;
 

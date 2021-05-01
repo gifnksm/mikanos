@@ -20,8 +20,7 @@ static const size_t kMemoryPoolSize = 4096 * 32;
  *
  * @param size        確保するメモリ領域のサイズ（バイト単位）
  * @param alignment   メモリ領域のアライメント制約．0 なら制約しない．
- * @param boundary    確保したメモリ領域が跨いではいけない境界．0
- * なら制約しない．
+ * @param boundary    確保したメモリ領域が跨いではいけない境界．0 なら制約しない．
  * @return 確保できなかった場合は nullptr
  */
 void *AllocMem(size_t size, unsigned int alignment, unsigned int boundary);

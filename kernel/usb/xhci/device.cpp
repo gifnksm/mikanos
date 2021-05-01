@@ -34,17 +34,13 @@ void Log(LogLevel level, const DataStageTRB &trb) {
 }
 
 void Log(LogLevel level, const SetupStageTRB &trb) {
-  Log(level,
-      "  SetupStage TRB: req_type %02x, req %02x, val %02x, ind %02x, len "
-      "%02x\n",
+  Log(level, "  SetupStage TRB: req_type %02x, req %02x, val %02x, ind %02x, len %02x\n",
       trb.bits.request_type, trb.bits.request, trb.bits.value, trb.bits.index, trb.bits.length);
 }
 
 void Log(LogLevel level, const TransferEventTRB &trb) {
   if (trb.bits.event_data) {
-    Log(level,
-        "Transfer (value %08lx) completed: %s, residual length %d, slot %d, ep "
-        "addr %d\n",
+    Log(level, "Transfer (value %08lx) completed: %s, residual length %d, slot %d, ep addr %d\n",
         reinterpret_cast<uint64_t>(trb.Pointer()),
         kTRBCompletionCodeToName[trb.bits.completion_code], trb.bits.trb_transfer_length,
         trb.bits.slot_id, trb.EndpointID().Address());
