@@ -92,7 +92,7 @@ ANOTHER_FILE=
 ./target/%.o: ./%.asm Makefile | ./target/
 	nasm -f elf64 -o $@ $<
 ./target/kernel.elf: $(OBJS) Makefile
-	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc
+	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++
 
 ./target/kernel/hankaku.bin: ./kernel/hankaku.txt Makefile
 	mkdir -p $(@D)
