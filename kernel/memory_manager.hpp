@@ -7,9 +7,9 @@
 #pragma once
 
 #include "error.hpp"
+#include "memory_map.hpp"
 
 #include <array>
-#include <cstddef>
 #include <limits>
 
 namespace {
@@ -81,4 +81,4 @@ private:
   void SetBit(FrameId frame, bool allocated);
 };
 
-Error InitializeHeap(BitmapMemoryManager &memory_manager);
+void InitializeMemoryManager(const MemoryMap &memory_map);

@@ -2,7 +2,7 @@
 
 #include "console.hpp"
 
-#include <cstdarg>
+#include <cstddef>
 #include <cstdio>
 
 namespace {

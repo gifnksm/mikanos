@@ -8,12 +8,11 @@
 #include <Library/PrintLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
-#include <Protocol/GraphicsOutput.h>
+#include <Protocol/BlockIo.h>
+#include <Protocol/DiskIo2.h>
 #include <Protocol/LoadedImage.h>
 #include <Protocol/SimpleFileSystem.h>
 #include <Uefi.h>
-#include <Uefi/UefiBaseType.h>
-#include <Uefi/UefiSpec.h>
 
 EFI_STATUS GetMemoryMap(struct MemoryMap *map) {
   if (map->buffer == NULL) {
@@ -157,9 +156,8 @@ const CHAR16 *GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt) {
 }
 
 void Halt(void) {
-  while (1) {
+  while (1)
     __asm__("hlt");
-  }
 }
 
 void CalcLoadAddressRange(Elf64_Ehdr *ehdr, UINT64 *first, UINT64 *last) {
@@ -167,9 +165,8 @@ void CalcLoadAddressRange(Elf64_Ehdr *ehdr, UINT64 *first, UINT64 *last) {
   *first = MAX_UINT64;
   *last = 0;
   for (Elf64_Half i = 0; i < ehdr->e_phnum; ++i) {
-    if (phdr[i].p_type != PT_LOAD) {
+    if (phdr[i].p_type != PT_LOAD)
       continue;
-    }
     *first = MIN(*first, phdr[i].p_vaddr);
     *last = MAX(*last, phdr[i].p_vaddr + phdr[i].p_memsz);
   }
@@ -178,9 +175,8 @@ void CalcLoadAddressRange(Elf64_Ehdr *ehdr, UINT64 *first, UINT64 *last) {
 void CopyLoadSegments(Elf64_Ehdr *ehdr) {
   Elf64_Phdr *phdr = (Elf64_Phdr *)((UINT64)ehdr + ehdr->e_phoff);
   for (Elf64_Half i = 0; i < ehdr->e_phnum; ++i) {
-    if (phdr[i].p_type != PT_LOAD) {
+    if (phdr[i].p_type != PT_LOAD)
       continue;
-    }
 
     UINT64 segm_in_file = (UINT64)ehdr + phdr[i].p_offset;
     CopyMem((VOID *)phdr[i].p_vaddr, (VOID *)segm_in_file, phdr[i].p_filesz);
@@ -328,13 +324,22 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *system_tab
     Halt();
   }
 
-  typedef void EntryPointType(const struct FrameBufferConfig *, const struct MemoryMap *);
+  VOID *acpi_table = NULL;
+  for (UINTN i = 0; i < system_table->NumberOfTableEntries; ++i) {
+    if (CompareGuid(&gEfiAcpiTableGuid, &system_table->ConfigurationTable[i].VendorGuid)) {
+      acpi_table = system_table->ConfigurationTable[i].VendorTable;
+      break;
+    }
+  }
+
+  typedef void EntryPointType(const struct FrameBufferConfig *, const struct MemoryMap *,
+                              const VOID *);
   EntryPointType *entry_point = (EntryPointType *)entry_addr;
-  entry_point(&config, &memmap);
+  entry_point(&config, &memmap, acpi_table);
 
   Print(L"All done\n");
 
-  while (1) {
-  }
+  while (1)
+    ;
   return EFI_SUCCESS;
 }

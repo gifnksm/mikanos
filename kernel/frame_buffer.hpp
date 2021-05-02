@@ -4,7 +4,6 @@
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 
-#include <cstdint>
 #include <memory>
 #include <vector>
 

@@ -3,7 +3,6 @@
 #include "asmfunc.h"
 
 #include <array>
-#include <cstdint>
 
 namespace {
 const uint64_t kPageSize4K = 4096;
@@ -26,3 +25,5 @@ void SetupIdentityPageTable() {
 
   SetCr3(reinterpret_cast<uint64_t>(&pml4_table[0]));
 }
+
+void InitializePaging() { SetupIdentityPageTable(); }

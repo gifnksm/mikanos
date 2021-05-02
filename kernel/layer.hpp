@@ -6,11 +6,12 @@
 
 #pragma once
 
-#include "frame_buffer.hpp"
 #include "graphics.hpp"
 #include "window.hpp"
 
+#include <map>
 #include <memory>
+#include <vector>
 
 /** @brief Layer は 1 つの層を表す。
  *
@@ -95,3 +96,5 @@ private:
 };
 
 extern LayerManager *layer_manager;
+
+void InitializeLayer();

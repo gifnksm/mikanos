@@ -6,10 +6,12 @@
 
 #pragma once
 
+#include "message.hpp"
 #include "x86_descriptor.hpp"
 
 #include <array>
 #include <cstdint>
+#include <deque>
 
 union InterruptDescriptorAttribute {
   uint16_t data;
@@ -53,6 +55,7 @@ class InterruptVector {
 public:
   enum Number {
     kXhci = 0x40,
+    kLapicTimer = 0x41,
   };
 };
 
@@ -65,3 +68,5 @@ struct InterruptFrame {
 };
 
 void NotifyEndOfInterrupt();
+
+void InitializeInterrupt(std::deque<Message> *msg_queue);

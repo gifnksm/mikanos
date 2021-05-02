@@ -13,6 +13,8 @@
 #include "usb/xhci/registers.hpp"
 #include "usb/xhci/ring.hpp"
 
+#include <memory>
+
 namespace usb::xhci {
 class Controller {
 public:
@@ -62,4 +64,8 @@ Error ConfigureEndpoints(Controller &xhc, Device &dev);
  * @return イベントを正常に処理できたら Error::kSuccess
  */
 Error ProcessEvent(Controller &xhc);
+
+extern Controller *controller;
+void Initialize();
+void ProcessEvents();
 } // namespace usb::xhci

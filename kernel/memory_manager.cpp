@@ -1,6 +1,6 @@
 #include "memory_manager.hpp"
 
-#include <cstddef>
+#include "logger.hpp"
 
 BitmapMemoryManager::BitmapMemoryManager()
     : alloc_map_{}, range_begin_{FrameId{0}}, range_end_{FrameId{kFrameCount}} {}
@@ -67,7 +67,11 @@ void BitmapMemoryManager::SetBit(FrameId frame, bool allocated) {
   }
 }
 
-extern "C" char *program_break, *program_break_end;
+extern "C" caddr_t program_break, program_break_end;
+
+namespace {
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
+BitmapMemoryManager *memory_manager;
 
 Error InitializeHeap(BitmapMemoryManager &memory_manager) {
   const int kHeapFrames = 64 * 512;
@@ -76,7 +80,37 @@ Error InitializeHeap(BitmapMemoryManager &memory_manager) {
     return heap_start.error;
   }
 
-  program_break = reinterpret_cast<char *>(heap_start.value.Id() * kBytesPerFrame);
+  program_break = reinterpret_cast<caddr_t>(heap_start.value.Id() * kBytesPerFrame);
   program_break_end = program_break + kHeapFrames * kBytesPerFrame;
   return MAKE_ERROR(Error::kSuccess);
+}
+} // namespace
+
+void InitializeMemoryManager(const MemoryMap &memory_map) {
+  ::memory_manager = new (memory_manager_buf) BitmapMemoryManager;
+
+  const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
+  uintptr_t available_end = 0;
+  for (uintptr_t iter = memory_map_base; iter < memory_map_base + memory_map.map_size;
+       iter += memory_map.descriptor_size) {
+    auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
+    if (available_end < desc->physical_start) {
+      memory_manager->MarkAllocated(FrameId{available_end / kBytesPerFrame},
+                                    (desc->physical_start - available_end) / kBytesPerFrame);
+    }
+
+    const auto physical_end = desc->physical_start + desc->number_of_pages * kUefiPageSize;
+    if (IsAvailable(static_cast<MemoryType>(desc->type))) {
+      available_end = physical_end;
+    } else {
+      memory_manager->MarkAllocated(FrameId{desc->physical_start / kBytesPerFrame},
+                                    desc->number_of_pages * kUefiPageSize / kBytesPerFrame);
+    }
+  }
+  memory_manager->SetMemoryRange(FrameId{1}, FrameId{available_end / kBytesPerFrame});
+
+  if (auto err = InitializeHeap(*memory_manager)) {
+    Log(kError, "failed to allocate pages: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+    exit(1);
+  }
 }

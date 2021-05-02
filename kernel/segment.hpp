@@ -8,6 +8,7 @@
 
 #include "x86_descriptor.hpp"
 
+#include <array>
 #include <cstdint>
 
 union SegmentDescriptor {
@@ -34,4 +35,9 @@ void SetCodeSegment(SegmentDescriptor &desc, DescriptorType type,
 void SetDataSegment(SegmentDescriptor &desc, DescriptorType type,
                     unsigned int descriptor_privilege_level, uint32_t base, uint32_t limit);
 
+const uint16_t kKernelCs = 1 << 3;
+const uint16_t kKernelSs = 2 << 3;
+const uint16_t kKernelDs = 0;
+
 void SetupSegments();
+void InitializeSegmentation();

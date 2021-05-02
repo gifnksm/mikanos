@@ -163,3 +163,5 @@ Error ConfigureMsiFixedDestination(const Device &dev, uint8_t apic_id, MsiTrigge
                                    MsiDeliveryMode delivery_mode, uint8_t vector,
                                    unsigned int num_vector_exponent);
 } // namespace pci
+
+void InitializePci();
