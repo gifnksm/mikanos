@@ -11,4 +11,6 @@ void LoadGdt(uint16_t limit, uint64_t offset);
 void SetCsSs(uint16_t cs, uint16_t ss);
 void SetDsAll(uint16_t value);
 void SetCr3(uint64_t value);
+uint64_t GetCr3();
+void SwitchContext(void *next_ctx, void *current_ctx);
 }

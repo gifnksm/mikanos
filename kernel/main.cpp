@@ -21,6 +21,7 @@
 #include "paging.hpp"
 #include "pci.hpp"
 #include "segment.hpp"
+#include "task.hpp"
 #include "timer.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "window.hpp"
@@ -105,6 +106,37 @@ void InputTextWindow(char c) {
   layer_manager->Draw(text_window_layer_id);
 }
 
+std::shared_ptr<Window> task_b_window;
+unsigned int task_b_window_layer_id;
+void InitializeTaskBWindow() {
+  task_b_window = std::make_shared<Window>(160, 52, screen_config.pixel_format);
+  DrawWindow(*task_b_window->Writer(), "TaskB Window");
+
+  task_b_window_layer_id =
+      layer_manager->NewLayer().SetWindow(task_b_window).SetDraggable(true).Move({100, 100}).Id();
+
+  layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
+}
+
+void TaskB(uint64_t task_id, int64_t data) {
+  printk("TaskB: task_id=%lu, data=%lu\n", task_id, data);
+  char str[128];
+  int count = 0;
+  while (true) {
+    ++count;
+    sprintf(str, "%010d", count);
+    FillRectangle(*task_b_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
+    WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
+    layer_manager->Draw(task_b_window_layer_id);
+  }
+}
+
+void TaskIdle(uint64_t task_id, int64_t data) {
+  printk("TaskIdle: task_id=%lu, data=%lx\n", task_id, data);
+  while (true)
+    __asm__("hlt");
+}
+
 std::deque<Message> *main_queue;
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
@@ -131,6 +163,7 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_
   InitializeLayer();
   InitializeMainWindow();
   InitializeTextWindow();
+  InitializeTaskBWindow();
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});
 
@@ -145,6 +178,11 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_
   timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
   __asm__("sti");
   bool textbox_cursor_visible = false;
+
+  InitializeTask();
+  task_manager->NewTask().InitContext(TaskB, 45);
+  task_manager->NewTask().InitContext(TaskIdle, 0xdeadbeef);
+  task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe);
 
   char str[128];
 

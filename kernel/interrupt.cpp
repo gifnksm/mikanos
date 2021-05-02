@@ -36,7 +36,6 @@ __attribute__((interrupt)) void IntHandlerXhci(InterruptFrame *frame) {
 
 __attribute__((interrupt)) void IntHandlerLapicTimer(InterruptFrame *frame) {
   LapicTimerOnInterrupt();
-  NotifyEndOfInterrupt();
 }
 } // namespace
 
