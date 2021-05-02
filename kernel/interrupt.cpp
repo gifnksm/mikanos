@@ -8,6 +8,7 @@
 
 #include "asmfunc.h"
 #include "segment.hpp"
+#include "task.hpp"
 #include "timer.hpp"
 
 std::array<InterruptDescriptor, 256> idt;
@@ -27,10 +28,8 @@ void NotifyEndOfInterrupt() {
 }
 
 namespace {
-std::deque<Message> *msg_queue;
-
 __attribute__((interrupt)) void IntHandlerXhci(InterruptFrame *frame) {
-  msg_queue->push_back(Message{Message::kInterruptXhci});
+  task_manager->SendMessage(1, Message{Message::kInterruptXhci});
   NotifyEndOfInterrupt();
 }
 
@@ -39,9 +38,7 @@ __attribute__((interrupt)) void IntHandlerLapicTimer(InterruptFrame *frame) {
 }
 } // namespace
 
-void InitializeInterrupt(std::deque<Message> *msg_queue) {
-  ::msg_queue = msg_queue;
-
+void InitializeInterrupt() {
   SetIdtEntry(idt[InterruptVector::kXhci], MakeIdtAttr(DescriptorType::kInterruptGate, 0),
               reinterpret_cast<uint64_t>(IntHandlerXhci), kKernelCs);
   SetIdtEntry(idt[InterruptVector::kLapicTimer], MakeIdtAttr(DescriptorType::kInterruptGate, 0),
