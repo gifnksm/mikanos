@@ -7,6 +7,7 @@
 #pragma once
 
 #include "graphics.hpp"
+#include "message.hpp"
 #include "window.hpp"
 
 #include <map>
@@ -66,6 +67,8 @@ public:
   void Draw(const Rectangle<int> &area) const;
   /** @brief 指定したレイヤーに設定されているウィンドウの描画領域内を再描画する。 */
   void Draw(unsigned int id) const;
+  /** @brief 指定したレイヤーに設定されているウィンドウ内の指定された範囲を再描画する。 */
+  void Draw(unsigned int id, Rectangle<int> area) const;
 
   /** @brief レイヤーの位置情報を指定された絶対座標へと更新する。再描画する。 */
   void Move(unsigned int id, Vector2D<int> new_pos);
@@ -84,6 +87,10 @@ public:
 
   /** @brief 指定された座標にウィンドウを持つ最も上に表示されているレイヤーを探す。 */
   Layer *FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id) const;
+  /** @brief 指定された ID を持つレイヤーを返す。 */
+  Layer *FindLayer(unsigned int id);
+  /** @brief 指定されたレイヤーの現在の高さを返す。 */
+  int GetHeight(unsigned int id);
 
 private:
   FrameBuffer *screen_{nullptr};
@@ -91,10 +98,36 @@ private:
   std::vector<std::unique_ptr<Layer>> layers_{};
   std::vector<Layer *> layer_stack_{};
   unsigned int latest_id_{0};
-
-  Layer *FindLayer(unsigned int id);
 };
 
 extern LayerManager *layer_manager;
 
+class ActiveLayer {
+public:
+  ActiveLayer(LayerManager &manager);
+  void SetMouseLayer(unsigned int mouse_layer);
+  void Activate(unsigned int layer_id);
+  unsigned int GetActive() const { return active_layer_; }
+
+private:
+  LayerManager &manager_;
+  unsigned int active_layer_{0};
+  unsigned int mouse_layer_{0};
+};
+
+extern ActiveLayer *active_layer;
+
 void InitializeLayer();
+void ProcessLayerMessage(const Message &msg);
+
+constexpr Message MakeLayerMessage(uint64_t task_id, unsigned int layer_id, LayerOperation op,
+                                   const Rectangle<int> &area) {
+  Message msg{Message::kLayer, task_id};
+  msg.arg.layer.layer_id = layer_id;
+  msg.arg.layer.op = op;
+  msg.arg.layer.x = area.pos.x;
+  msg.arg.layer.y = area.pos.y;
+  msg.arg.layer.w = area.size.x;
+  msg.arg.layer.h = area.size.y;
+  return msg;
+}

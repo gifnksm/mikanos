@@ -2,12 +2,18 @@
 
 #include <cstdint>
 
+enum class LayerOperation { Move, MoveRelative, Draw, DrawArea };
+
 struct Message {
   enum Type {
     kInterruptXhci,
     kTimerTimeout,
     kKeyPush,
+    kLayer,
+    kLayerFinish,
   } type;
+
+  uint64_t src_task;
 
   union {
     struct {
@@ -20,5 +26,12 @@ struct Message {
       uint8_t keycode;
       char ascii;
     } keyboard;
+
+    struct {
+      LayerOperation op;
+      unsigned int layer_id;
+      int x, y;
+      int w, h;
+    } layer;
   } arg;
 };
