@@ -9,7 +9,7 @@ WORKDIR=target
 DEVENV=external/mikanos-build/devenv
 TARGET=target/mikanos.img
 
-all: $(TARGET)
+all: $(TARGET) $(WORKDIR)/OVMF_CODE.fd $(WORKDIR)/OVMF_VARS.fd
 .PHONY: all
 
 clean:

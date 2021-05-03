@@ -23,11 +23,11 @@ CPPFLAGS=\
     -I$(DEVENV)/x86_64-elf/include \
     -nostdlibinc -D__ELF__ -D_LDBL_EQ_DBL -D_GNU_SOURCE -D_POSIX_TIMERS
 CXXFLAGS=\
-    -O2 -Wall -g --target=x86_64-elf -ffreestanding \
+    -O2 -Wall -g --target=x86_64-elf -ffreestanding -mcmodel=large \
     -fno-exceptions -fno-rtti -std=c++17
 LDFLAGS=\
     -L$(DEVENV)/x86_64-elf/lib \
-    --entry main -z norelro --image-base 0 --static -nmagic
+    --entry main -z norelro --image-base 0xffff800000000000 --static
 
 all: $(TARGET)
 .PHONY: all
