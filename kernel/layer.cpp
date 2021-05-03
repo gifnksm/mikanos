@@ -204,6 +204,7 @@ void ActiveLayer::Activate(unsigned int layer_id) {
 }
 
 ActiveLayer *active_layer;
+std::map<unsigned int, uint64_t> *layer_task_map;
 
 void InitializeLayer() {
   const auto screen_size = ScreenSize();
@@ -233,6 +234,8 @@ void InitializeLayer() {
   layer_manager->UpDown(console->LayerId(), 1);
 
   active_layer = new ActiveLayer{*layer_manager};
+
+  layer_task_map = new std::map<unsigned int, uint64_t>;
 }
 
 void ProcessLayerMessage(const Message &msg) {
