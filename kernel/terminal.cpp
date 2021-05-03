@@ -1,11 +1,46 @@
 #include "terminal.hpp"
 
-#include "fat.hpp"
+#include "asmfunc.h"
+#include "elf.hpp"
 #include "font.hpp"
 #include "layer.hpp"
 #include "pci.hpp"
 
 #include <cstring>
+
+namespace {
+
+std::vector<char *> MakeArgVector(char *command, char *first_arg) {
+  std::vector<char *> argv;
+  argv.push_back(command);
+  if (!first_arg) {
+    return argv;
+  }
+
+  char *p = first_arg;
+  while (true) {
+    while (isspace(p[0])) {
+      ++p;
+    }
+    if (p[0] == 0) {
+      break;
+    }
+    argv.push_back(p);
+
+    while (p[0] != 0 && !isspace(p[0])) {
+      ++p;
+    }
+    if (p[0] == 0) {
+      break;
+    }
+    p[0] = 0;
+    ++p;
+  }
+
+  return argv;
+}
+
+} // namespace
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(kColumns * 8 + 8 + ToplevelWindow::kMarginX,
@@ -123,9 +158,7 @@ void Terminal::ExecuteLine() {
   } else if (strcmp(command, "ls") == 0) {
     auto root_dir_entries =
         fat::GetSectorByCluster<fat::DirectoryEntry>(fat::boot_volume_image->root_cluster);
-    auto entries_per_cluster = fat::boot_volume_image->bytes_per_sector /
-                               sizeof(fat::DirectoryEntry) *
-                               fat::boot_volume_image->sectors_per_cluster;
+    auto entries_per_cluster = fat::bytes_per_cluster / sizeof(fat::DirectoryEntry);
     char base[9], ext[4];
     char s[64];
     for (int i = 0; i < entries_per_cluster; ++i) {
@@ -145,16 +178,85 @@ void Terminal::ExecuteLine() {
       }
       Print(s);
     }
+  } else if (strcmp(command, "cat") == 0) {
+    char s[64];
+
+    auto file_entry = fat::FindFile(first_arg);
+    if (!file_entry) {
+      sprintf(s, "no such file: %s\n", first_arg);
+      Print(s);
+    } else {
+      auto cluster = file_entry->FirstCluster();
+      auto remain_bytes = file_entry->file_size;
+
+      DrawCursor(false);
+      while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
+        char *p = fat::GetSectorByCluster<char>(cluster);
+
+        int i = 0;
+        for (; i < fat::bytes_per_cluster && i < remain_bytes; ++i) {
+          Print(*p);
+          ++p;
+        }
+        remain_bytes -= i;
+        cluster = fat::NextCluster(cluster);
+      }
+      DrawCursor(true);
+    }
   } else if (command[0] != 0) {
-    Print("no such command: ");
-    Print(command);
-    Print("\n");
+    auto file_entry = fat::FindFile(command);
+    if (!file_entry) {
+      Print("no such command: ");
+      Print(command);
+      Print("\n");
+    } else {
+      ExecuteFile(*file_entry, command, first_arg);
+    }
   }
 }
 
-void Terminal::Print(const char *s) {
-  DrawCursor(false);
+void Terminal::ExecuteFile(const fat::DirectoryEntry &file_entry, char *command, char *first_arg) {
+  auto cluster = file_entry.FirstCluster();
+  auto remain_bytes = file_entry.file_size;
 
+  std::vector<uint8_t> file_buf(remain_bytes);
+  auto p = &file_buf[0];
+
+  while (cluster != 0 && cluster != fat::kEndOfClusterchain) {
+    const auto copy_bytes =
+        fat::bytes_per_cluster < remain_bytes ? fat::bytes_per_cluster : remain_bytes;
+    memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), copy_bytes);
+
+    remain_bytes -= copy_bytes;
+    p += copy_bytes;
+    cluster = fat::NextCluster(cluster);
+  }
+
+  auto elf_header = reinterpret_cast<Elf64_Ehdr *>(&file_buf[0]);
+  if (memcmp(elf_header->e_ident,
+             "\x7f"
+             "ELF",
+             4) != 0) {
+    using Func = void();
+    auto f = reinterpret_cast<Func *>(&file_buf[0]);
+    f();
+    return;
+  }
+
+  auto argv = MakeArgVector(command, first_arg);
+
+  auto entry_addr = elf_header->e_entry;
+  entry_addr += reinterpret_cast<uintptr_t>(&file_buf[0]);
+  using Func = int(int, char **);
+  auto f = reinterpret_cast<Func *>(entry_addr);
+  auto ret = f(argv.size(), &argv[0]);
+
+  char s[64];
+  sprintf(s, "app exited. ret = %d\n", ret);
+  Print(s);
+}
+
+void Terminal::Print(char c) {
   auto newline = [this]() {
     cursor_.x = 0;
     if (cursor_.y < kRows - 1) {
@@ -164,18 +266,23 @@ void Terminal::Print(const char *s) {
     }
   };
 
-  while (*s) {
-    if (*s == '\n') {
+  if (c == '\n') {
+    newline();
+  } else {
+    WriteAscii(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
+    if (cursor_.x == kColumns - 1) {
       newline();
     } else {
-      WriteAscii(*window_->Writer(), CalcCursorPos(), *s, {255, 255, 255});
-      if (cursor_.x == kColumns - 1) {
-        newline();
-      } else {
-        ++cursor_.x;
-      }
+      ++cursor_.x;
     }
+  }
+}
 
+void Terminal::Print(const char *s) {
+  DrawCursor(false);
+
+  while (*s) {
+    Print(*s);
     ++s;
   }
 
@@ -225,6 +332,7 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
       __asm__("sti");
       continue;
     }
+    __asm__("sti");
 
     switch (msg->type) {
     case Message::kTimerTimeout: {
