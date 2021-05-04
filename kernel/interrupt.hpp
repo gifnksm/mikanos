@@ -48,6 +48,8 @@ constexpr InterruptDescriptorAttribute MakeIdtAttr(DescriptorType type,
   return attr;
 }
 
+const int kIstForTimer = 1; // index of the interrupt stack table
+
 void SetIdtEntry(InterruptDescriptor &desc, InterruptDescriptorAttribute attr, uint64_t offset,
                  uint16_t segment_selector);
 

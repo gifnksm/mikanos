@@ -6,7 +6,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
 REPOROOT=../..
-APPNAME=rpn
+APPNAME=winhello
 
 include ../apps.mk
 
