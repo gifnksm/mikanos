@@ -175,23 +175,23 @@ RestoreContext:                 ; void RestoreContext(void *task_context);
         global CallApp
 CallApp:                        ; int CallApp(int argc, char **argv, uint16_t ss,
                                 ;             uint64_t rip, uint64_t rsp, uint64_t *os_stack_ptr);
-	push rbx
+        push rbx
         push rbp
         push r12
         push r13
         push r14
         push r15
-        mov [r9], rsp           ;OS 用のスタックポインタを保存
+        mov [r9], rsp           ; OS 用のスタックポインタを保存
 
-	push rdx                ; SS
+        push rdx                ; SS
         push r8                 ; RSP
         add rdx, 8
         push rdx                ; CS
         push rcx                ; RIP
         o64 retf
         ;; アプリケーションが終了してもここには来ない
-        
-	extern LapicTimerOnInterrupt
+
+        extern LapicTimerOnInterrupt
         ;; void LapicTimerOnInterrupt(const TaskContext &ctx_stack);
 
         global IntHandlerLapicTimer
@@ -271,6 +271,7 @@ WriteMsr:                       ; void WriteMsr(uint32_t msr, uint64_t value);
         wrmsr
         ret
 
+        extern GetCurrentTaskOsStackPointer
         extern syscall_table
         global SyscallEntry
 SyscallEntry:                   ; void SyscallEntry(void);
@@ -283,6 +284,22 @@ SyscallEntry:                   ; void SyscallEntry(void);
         mov rcx, r10
         and eax, 0x7fffffff
         mov rbp, rsp
+
+        ;; システムコールを OS 用スタックで実行するための準備
+        and rsp, 0xfffffffffffffff0
+        push rax
+        push rdx
+        cli
+        call GetCurrentTaskOsStackPointer
+        sti
+        mov rdx, [rsp + 0]      ; RDX
+        mov [rax - 16], rdx
+        mov rdx, [rsp + 8]      ; RAX
+        mov [rax - 8], rdx
+
+        lea rsp, [rax - 16]
+        pop rdx
+        pop rax
         and rsp, 0xfffffffffffffff0
 
         call [syscall_table + 8 * eax]

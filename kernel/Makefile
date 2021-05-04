@@ -45,7 +45,7 @@ clean:
 
 $(TARGET): $(OBJS) Makefile
 	mkdir -p $(@D)
-	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi
+	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi -lm
 
 $(WORKDIR)/%.o: %.cpp Makefile
 	mkdir -p $(@D)

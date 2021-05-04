@@ -1,14 +1,18 @@
 #include "syscall.hpp"
 
+#include "app_event.hpp"
 #include "asmfunc.h"
 #include "font.hpp"
+#include "keyboard.hpp"
 #include "logger.hpp"
 #include "msr.hpp"
 #include "task.hpp"
 #include "terminal.hpp"
+#include "timer.hpp"
 
 #include <array>
 #include <cerrno>
+#include <cmath>
 #include <cstdint>
 
 namespace syscall {
@@ -66,16 +70,19 @@ SYSCALL(OpenWindow) {
   const auto layer_id =
       layer_manager->NewLayer().SetWindow(win).SetDraggable(true).Move({x, y}).Id();
   active_layer->Activate(layer_id);
+
+  const auto task_id = task_manager->CurrentTask().Id();
+  layer_task_map->insert(std::make_pair(layer_id, task_id));
   __asm__("sti");
 
   return {layer_id, 0};
 }
 
-SYSCALL(WinWriteString) {
-  const unsigned int layer_id = arg1;
-  const int x = arg2, y = arg3;
-  const uint32_t color = arg4;
-  const auto s = reinterpret_cast<const char *>(arg5);
+namespace {
+template <class Func, class... Args>
+Result DoWinFunc(Func f, uint64_t layer_id_flags, Args... args) {
+  const uint32_t layer_flags = layer_id_flags >> 32;
+  const unsigned int layer_id = layer_id_flags & 0xffffffff;
 
   __asm__("cli");
   auto layer = layer_manager->FindLayer(layer_id);
@@ -84,12 +91,148 @@ SYSCALL(WinWriteString) {
     return {0, EBADF};
   }
 
-  WriteString(*layer->GetWindow()->Writer(), {x, y}, s, ToColor(color));
+  const auto res = f(*layer->GetWindow(), args...);
+  if (res.error) {
+    return res;
+  }
+
+  if ((layer_flags & 1) == 0) {
+    __asm__("cli");
+    layer_manager->Draw(layer_id);
+    __asm__("sti");
+  }
+
+  return res;
+}
+} // namespace
+
+SYSCALL(WinWriteString) {
+  return DoWinFunc(
+      [](Window &win, int x, int y, uint32_t color, const char *s) {
+        WriteString(*win.Writer(), {x, y}, s, ToColor(color));
+        return Result{0, 0};
+      },
+      arg1, arg2, arg3, arg4, reinterpret_cast<const char *>(arg5));
+}
+
+SYSCALL(WinFillRectangle) {
+  return DoWinFunc(
+      [](Window &win, int x, int y, int w, int h, uint32_t color) {
+        FillRectangle(*win.Writer(), {x, y}, {w, h}, ToColor(color));
+        return Result{0, 0};
+      },
+      arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+SYSCALL(GetCurrentTick) { return {timer_manager->CurrentTick(), kTimerFreq}; }
+
+SYSCALL(WinRedraw) {
+  return DoWinFunc([](Window &) { return Result{0, 0}; }, arg1);
+}
+
+SYSCALL(WinDrawLine) {
+  return DoWinFunc(
+      [](Window &win, int x0, int y0, int x1, int y1, uint32_t color) {
+        auto sign = [](int x) { return (x > 0) ? 1 : (x < 0) ? -1 : 0; };
+        const int dx = x1 - x0 + sign(x1 - x0);
+        const int dy = y1 - y0 + sign(y1 - y0);
+
+        if (dx == 0 && dy == 0) {
+          win.Writer()->Write({x0, y0}, ToColor(color));
+          return Result{0, 0};
+        }
+
+        const auto floord = static_cast<double (*)(double)>(floor);
+        const auto ceild = static_cast<double (*)(double)>(ceil);
+
+        if (abs(dx) >= abs(dy)) {
+          if (dx < 0) {
+            std::swap(x0, x1);
+            std::swap(y0, y1);
+          }
+          const auto roundish = y1 >= y0 ? floord : ceild;
+          const double m = static_cast<double>(dy) / dx;
+          for (int x = x0; x <= x1; ++x) {
+            const int y = roundish(m * (x - x0) + y0);
+            win.Writer()->Write({x, y}, ToColor(color));
+          }
+        } else {
+          if (dy < 0) {
+            std::swap(x0, x1);
+            std::swap(y0, y1);
+          }
+          const auto roundish = x1 >= x0 ? floord : ceild;
+          const double m = static_cast<double>(dx) / dy;
+          for (int y = y0; y <= y1; ++y) {
+            const int x = roundish(m * (y - y0) + x0);
+            win.Writer()->Write({x, y}, ToColor(color));
+          }
+        }
+        return Result{0, 0};
+      },
+      arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+SYSCALL(CloseWindow) {
+  const unsigned int layer_id = arg1 & 0xffffffff;
+  const auto layer = layer_manager->FindLayer(layer_id);
+
+  if (layer == nullptr) {
+    return {EBADF, 0};
+  }
+
+  const auto layer_pos = layer->GetPosition();
+  const auto win_size = layer->GetWindow()->Size();
+
   __asm__("cli");
-  layer_manager->Draw(layer_id);
+  active_layer->Activate(0);
+  layer_manager->RemoveLayer(layer_id);
+  layer_manager->Draw({layer_pos, win_size});
+  layer_task_map->erase(layer_id);
   __asm__("sti");
 
   return {0, 0};
+}
+
+SYSCALL(ReadEvent) {
+  if (arg1 < 0x8000'0000'0000'0000) {
+    return {0, EFAULT};
+  }
+  const auto app_events = reinterpret_cast<AppEvent *>(arg1);
+  const size_t len = arg2;
+
+  __asm__("cli");
+  auto &task = task_manager->CurrentTask();
+  __asm__("sti");
+  size_t i = 0;
+
+  while (i < len) {
+    __asm__("cli");
+    auto msg = task.ReceiveMessage();
+    if (!msg && i == 0) {
+      task.Sleep();
+      continue;
+    }
+    __asm__("sti");
+
+    if (!msg) {
+      break;
+    }
+
+    switch (msg->type) {
+    case Message::kKeyPush:
+      if (msg->arg.keyboard.keycode == 20 /* Q key */ &&
+          msg->arg.keyboard.modifier & (kLControlBitMask | kRControlBitMask)) {
+        app_events[i].type = AppEvent::kQuit;
+        ++i;
+      }
+      break;
+    default:
+      Log(kInfo, "uncaught event type: %u\n", msg->type);
+    }
+  }
+
+  return {i, 0};
 }
 
 #undef SYSCALL
@@ -97,12 +240,18 @@ SYSCALL(WinWriteString) {
 } // namespace syscall
 
 using SyscallFuncType = syscall::Result(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType *, 5> syscall_table{
+extern "C" std::array<SyscallFuncType *, 0xb> syscall_table{
     /* 0x00 */ syscall::LogString,
     /* 0x01 */ syscall::PutString,
     /* 0x02 */ syscall::Exit,
     /* 0x03 */ syscall::OpenWindow,
     /* 0x04 */ syscall::WinWriteString,
+    /* 0x05 */ syscall::WinFillRectangle,
+    /* 0x06 */ syscall::GetCurrentTick,
+    /* 0x07 */ syscall::WinRedraw,
+    /* 0x08 */ syscall::WinDrawLine,
+    /* 0x09 */ syscall::CloseWindow,
+    /* 0x0a */ syscall::ReadEvent,
 };
 
 void InitializeSyscall() {

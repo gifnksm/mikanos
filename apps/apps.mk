@@ -28,5 +28,5 @@ clean:
 
 $(TARGET): $(OBJS) $(COMMON_OBJS) Makefile
 	mkdir -p $(@D)
-	ld.lld $(LDFLAGS) -o $@ $(OBJS) $(COMMON_OBJS) -lc -lc++ -lc++abi
+	ld.lld $(LDFLAGS) -o $@ $(OBJS) $(COMMON_OBJS) -lc -lc++ -lc++abi -lm
 
