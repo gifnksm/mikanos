@@ -13,4 +13,10 @@ void SetDsAll(uint16_t value);
 void SetCr3(uint64_t value);
 uint64_t GetCr3();
 void SwitchContext(void *next_ctx, void *current_ctx);
+void RestoreContext(void *task_context);
+void CallApp(int argc, char **argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
+void IntHandlerLapicTimer();
+void LoadTr(uint16_t sel);
+void WriteMsr(uint32_t msr, uint64_t value);
+void SyscallEntry(void);
 }

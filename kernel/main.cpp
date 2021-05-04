@@ -22,6 +22,7 @@
 #include "paging.hpp"
 #include "pci.hpp"
 #include "segment.hpp"
+#include "syscall.hpp"
 #include "task.hpp"
 #include "terminal.hpp"
 #include "timer.hpp"
@@ -124,6 +125,7 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_
   InitializeSegmentation();
   InitializePaging();
   InitializeMemoryManager(memory_map);
+  InitializeTss();
   InitializeInterrupt();
 
   fat::Initialize(volume_image);
@@ -141,6 +143,8 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_
   const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);
   timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTimer});
   bool textbox_cursor_visible = false;
+
+  InitializeSyscall();
 
   InitializeTask();
   Task &main_task = task_manager->CurrentTask();

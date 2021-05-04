@@ -11,8 +11,9 @@ TARGET=../../target/apps/rpn
 .PRECIOUS: $(WORKDIR)/%.o
 
 CPP_SRCS=$(shell find . -type f -name '*.cpp' -printf '%P\n')
+ASM_SRCS=$(shell find . -type f -name '*.asm' -printf '%P\n')
 
-OBJS=$(addprefix $(WORKDIR)/,$(CPP_SRCS:.cpp=.o))
+OBJS=$(addprefix $(WORKDIR)/,$(CPP_SRCS:.cpp=.o) $(ASM_SRCS:.asm=.o))
 DEPS=$(addprefix $(WORKDIR)/,$(CPP_SRCS:.cpp=.d))
 
 DEVENV=../../external/mikanos-build/devenv
@@ -43,5 +44,8 @@ $(TARGET): $(OBJS) Makefile
 $(WORKDIR)/%.o: %.cpp Makefile
 	mkdir -p $(@D)
 	clang++ -MMD $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+$(WORKDIR)/%.o: %.asm Makefile
+	mkdir -p $(@D)
+	nasm -f elf64 -o $@ $<
 
 -include $(DEPS)
