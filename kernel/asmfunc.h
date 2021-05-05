@@ -19,4 +19,5 @@ void IntHandlerLapicTimer();
 void LoadTr(uint16_t sel);
 void WriteMsr(uint32_t msr, uint64_t value);
 void SyscallEntry(void);
+void ExitApp(uint64_t rsp, int32_t ret_val);
 }

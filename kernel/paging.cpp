@@ -23,7 +23,9 @@ void SetupIdentityPageTable() {
     }
   }
 
-  SetCr3(reinterpret_cast<uint64_t>(&pml4_table[0]));
+  ResetCr3();
 }
 
 void InitializePaging() { SetupIdentityPageTable(); }
+
+void ResetCr3() { SetCr3(reinterpret_cast<uint64_t>(&pml4_table[0])); }

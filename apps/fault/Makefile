@@ -6,6 +6,6 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
 REPOROOT=../..
-APPNAME=large
+APPNAME=fault
 
 include ../apps.mk

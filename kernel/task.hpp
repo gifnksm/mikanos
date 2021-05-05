@@ -8,6 +8,7 @@
 
 #include "error.hpp"
 #include "message.hpp"
+#include "paging.hpp"
 
 #include <array>
 #include <cstddef>
