@@ -225,6 +225,38 @@ SYSCALL(ReadEvent) {
           msg->arg.keyboard.modifier & (kLControlBitMask | kRControlBitMask)) {
         app_events[i].type = AppEvent::kQuit;
         ++i;
+      } else {
+        app_events[i].type = AppEvent::kKeyPush;
+        app_events[i].arg.keypush.modifier = msg->arg.keyboard.modifier;
+        app_events[i].arg.keypush.keycode = msg->arg.keyboard.keycode;
+        app_events[i].arg.keypush.ascii = msg->arg.keyboard.ascii;
+        app_events[i].arg.keypush.press = msg->arg.keyboard.press;
+        ++i;
+      }
+      break;
+    case Message::kMouseMove:
+      app_events[i].type = AppEvent::kMouseMove;
+      app_events[i].arg.mouse_move.x = msg->arg.mouse_move.x;
+      app_events[i].arg.mouse_move.y = msg->arg.mouse_move.y;
+      app_events[i].arg.mouse_move.dx = msg->arg.mouse_move.dx;
+      app_events[i].arg.mouse_move.dy = msg->arg.mouse_move.dy;
+      app_events[i].arg.mouse_move.buttons = msg->arg.mouse_move.buttons;
+      ++i;
+      break;
+    case Message::kMouseButton:
+      app_events[i].type = AppEvent::kMouseButton;
+      app_events[i].arg.mouse_button.x = msg->arg.mouse_button.x;
+      app_events[i].arg.mouse_button.y = msg->arg.mouse_button.y;
+      app_events[i].arg.mouse_button.press = msg->arg.mouse_button.press;
+      app_events[i].arg.mouse_button.button = msg->arg.mouse_button.button;
+      ++i;
+      break;
+    case Message::kTimerTimeout:
+      if (msg->arg.timer.value < 0) {
+        app_events[i].type = AppEvent::kTimerTimeout;
+        app_events[i].arg.timer.timeout = msg->arg.timer.timeout;
+        app_events[i].arg.timer.value = -msg->arg.timer.value;
+        ++i;
       }
       break;
     default:
@@ -235,12 +267,34 @@ SYSCALL(ReadEvent) {
   return {i, 0};
 }
 
+SYSCALL(CreateTimer) {
+  const unsigned int mode = arg1;
+  const int timer_value = arg2;
+  if (timer_value <= 0) {
+    return {0, EINVAL};
+  }
+
+  __asm__("cli");
+  const uint64_t task_id = task_manager->CurrentTask().Id();
+  __asm__("sti");
+
+  unsigned long timeout = arg3 * kTimerFreq / 1000;
+  if (mode & 1) { // relative
+    timeout += timer_manager->CurrentTick();
+  }
+
+  __asm__("cli");
+  timer_manager->AddTimer(Timer{timeout, -timer_value, task_id});
+  __asm__("sti");
+  return {timeout * 1000 / kTimerFreq, 0};
+}
+
 #undef SYSCALL
 
 } // namespace syscall
 
 using SyscallFuncType = syscall::Result(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
-extern "C" std::array<SyscallFuncType *, 0xb> syscall_table{
+extern "C" std::array<SyscallFuncType *, 0xc> syscall_table{
     /* 0x00 */ syscall::LogString,
     /* 0x01 */ syscall::PutString,
     /* 0x02 */ syscall::Exit,
@@ -252,6 +306,7 @@ extern "C" std::array<SyscallFuncType *, 0xb> syscall_table{
     /* 0x08 */ syscall::WinDrawLine,
     /* 0x09 */ syscall::CloseWindow,
     /* 0x0a */ syscall::ReadEvent,
+    /* 0x0b */ syscall::CreateTimer,
 };
 
 void InitializeSyscall() {
