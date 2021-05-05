@@ -64,6 +64,7 @@ $(WORKDIR)/%.img: ./target/%.efi apps Makefile
 	sudo umount $(WORKDIR)/mnt
 $(WORKDIR)/mikanos.img: $(WORKDIR)/kernel.elf
 $(WORKDIR)/mikanos.img: ANOTHER_FILE=$(WORKDIR)/kernel.elf
+$(WORKDIR)/mikanos.img: APPS_DIR=apps
 
 $(WORKDIR)/mikanos.efi: FORCE
 	mkdir -p $(@D)

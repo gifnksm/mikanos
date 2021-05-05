@@ -19,7 +19,6 @@ IoIn32:
         in eax, dx
         ret
 
-
         global GetCs            ; uint16_t GetCs(void);
 GetCs:
         xor eax, eax            ; also clears upper 32 bits of rax

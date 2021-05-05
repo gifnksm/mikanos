@@ -2,7 +2,7 @@
 
 REPOROOT="$(dirname "$(readlink -f "$0")")/.."
 cd "${REPOROOT}"
-git submodule update --init --recursive
+git submodule update --init
 
 cd external/mikanos-build/devenv
 wget https://github.com/uchan-nos/mikanos-build/releases/download/v2.0/x86_64-elf.tar.gz

@@ -2,8 +2,9 @@
 
 REPOROOT="$(dirname "$(readlink -f "$0")")/.."
 cd "${REPOROOT}"
-git submodule update --init --recursive
+git submodule update --init
 cd external/edk2
+git submodule update --init
 make -C BaseTools/Source/C
 ln -sf ../../MikanLoaderPkg ./
 

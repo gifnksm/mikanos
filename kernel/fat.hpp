@@ -99,6 +99,14 @@ template <class T> T *GetSectorByCluster(unsigned long cluster) {
  */
 void ReadName(const DirectoryEntry &entry, char *base, char *ext);
 
+/** @brief ディレクトリエントリの短名を dest にコピーする。
+ * 短名の拡張子が空なら "<base>" を，空でなければ "<base>.<ext>" をコピー。
+ *
+ * @param entry  ファイル名を得る対象のディレクトリエントリ
+ * @param dest  基本名と拡張子を結合した文字列を格納するに十分な大きさの配列。
+ */
+void FormatName(const DirectoryEntry &entry, char *dest);
+
 static const unsigned long kEndOfClusterchain = 0x0ffffffflu;
 
 /** @brief 指定されたクラスタの次のクラスタ番号を返す。
@@ -112,9 +120,12 @@ unsigned long NextCluster(unsigned long cluster);
  *
  * @param name  8+3形式のファイル名（大文字小文字は区別しない）
  * @param directory_cluster  ディレクトリの開始クラスタ（省略するとルートディレクトリから検索する）
- * @return ファイルを表すエントリ。見つからなければ nullptr。
+ * @return ファイルまたはディレクトリを表すエントリと，末尾スラッシュを示すフラグの組。
+ *   ファイルまたはディレクトリが見つからなければ nullptr。
+ *   エントリの直後にスラッシュがあれば true。
+ *   パスの途中のエントリがファイルであれば探索を諦め，そのエントリと true を返す。
  */
-DirectoryEntry *FindFile(const char *name, unsigned long directory_cluster = 0);
+std::pair<DirectoryEntry *, bool> FindFile(const char *path, unsigned long directory_cluster = 0);
 
 bool NameIsEqual(const DirectoryEntry &entry, const char *name);
 
@@ -126,5 +137,17 @@ bool NameIsEqual(const DirectoryEntry &entry, const char *name);
  * @return  読み込んだバイト数
  */
 size_t LoadFile(void *buf, size_t len, const DirectoryEntry &entry);
+
+class FileDescriptor {
+public:
+  explicit FileDescriptor(DirectoryEntry &fat_entry);
+  size_t Read(void *buf, size_t len);
+
+private:
+  DirectoryEntry &fat_entry_;
+  size_t rd_off_ = 0;
+  unsigned long rd_cluster_ = 0;
+  size_t rd_cluster_off_ = 0;
+};
 
 } // namespace fat

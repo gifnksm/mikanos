@@ -68,7 +68,7 @@ public:
   using ConstIterator = const ValueType *;
 
   ArrayWrapper(uintptr_t array_base_addr, size_t size)
-      : array_{reinterpret_cast<ValueType *>(array_base_addr)}, size_{size} {}
+      : array_(reinterpret_cast<ValueType *>(array_base_addr)), size_(size) {}
 
   size_t Size() const { return size_; }
 
