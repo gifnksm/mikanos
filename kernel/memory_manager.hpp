@@ -35,6 +35,11 @@ private:
 
 static const FrameId kNullFrame{std::numeric_limits<size_t>::max()};
 
+struct MemoryStat {
+  size_t allocated_frames;
+  size_t total_frames;
+};
+
 /** @brief ビットマップ配列を用いてフレーム単位でメモリ管理するクラス．
  *
  * 1 ビットを 1 フレームに対応させて，ビットマップにより空きフレームを管理する．
@@ -69,6 +74,10 @@ public:
    * @param range_end_   メモリ範囲の終点．最終フレームの次のフレーム．
    */
   void SetMemoryRange(FrameId range_begin, FrameId range_end);
+
+  /** @brief 空き/総フレームの数を返す
+   */
+  MemoryStat Stat() const;
 
 private:
   std::array<MapLineType, kFrameCount / kBitsPerMapLine> alloc_map_;

@@ -71,6 +71,21 @@ SetDsAll:
         mov gs, di
         ret
 
+        global GetCr0           ; uint64_t GetCr0();
+GetCr0:
+        mov rax, cr0
+        ret
+
+        global SetCr0           ; void SetCr0(uint64_t value);
+SetCr0:
+        mov cr0, rdi
+        ret
+
+        global GetCr2           ; uint64_t GetCr2();
+GetCr2:
+        mov rax, cr2
+        ret
+
         global SetCr3           ; void SetCr3(uint64_t value);
 SetCr3:
         mov cr3, rdi
@@ -334,3 +349,8 @@ ExitApp:
         pop rbx
 
         ret                     ; CallApp の次の行に飛ぶ
+
+        global InvalidateTlb    ; void InvalidateTlb(uint64_t addr);
+InvalidateTlb:
+        invlpg [rdi]
+        ret

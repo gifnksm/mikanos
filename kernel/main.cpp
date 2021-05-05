@@ -153,6 +153,7 @@ extern "C" void KernelMainNewStack(const FrameBufferConfig &frame_buffer_config_
   InitializeKeyboard();
   InitializeMouse();
 
+  app_loads = new std::map<fat::DirectoryEntry *, AppLoadInfo>;
   task_manager->NewTask().InitContext(TaskTerminal, 0).Wakeup();
 
   char str[128];
