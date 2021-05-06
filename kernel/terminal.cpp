@@ -11,9 +11,12 @@
 #include "pci.hpp"
 #include "timer.hpp"
 #include "uefi.hpp"
+#include "usb/classdriver/cdc.hpp"
+#include "usb/xhci/xhci.hpp"
 
 #include <cstring>
 #include <limits>
+#include <vector>
 
 namespace {
 
@@ -504,6 +507,42 @@ void Terminal::ExecuteLine() {
     uefi_rt->ResetSystem(EfiResetWarm, EFI_SUCCESS, 0, nullptr);
   } else if (strcmp(command, "poweroff") == 0) {
     uefi_rt->ResetSystem(EfiResetShutdown, EFI_SUCCESS, 0, nullptr);
+  } else if (strcmp(command, "lsusb") == 0) {
+    auto devmgr = usb::xhci::controller->DeviceManager();
+    for (int slot = 1; slot < 256; ++slot) {
+      auto dev = devmgr->FindBySlot(slot);
+      if (!dev) {
+        continue;
+      }
+      PrintToFd(*files_[1], "Slot %d: ID %04x:%04x Class %d.%d.%d\n", slot,
+                dev->DeviceDesc().vendor_id, dev->DeviceDesc().product_id,
+                dev->DeviceDesc().device_class, dev->DeviceDesc().device_sub_class,
+                dev->DeviceDesc().device_protocol);
+    }
+  } else if (strcmp(command, "usbtest") == 0) {
+    [&] {
+      if (!usb::cdc::driver) {
+        PrintToFd(*files_[2], "CDC device not exist\n");
+        exit_code = 1;
+        return;
+      }
+
+      size_t send_len;
+      if (first_arg && first_arg[0]) {
+        send_len = strlen(first_arg);
+        usb::cdc::driver->SendSerial(first_arg, send_len);
+      } else {
+        send_len = 1;
+        usb::cdc::driver->SendSerial("a", 1);
+      }
+
+      std::vector<uint8_t> buf(send_len);
+      int recv_len = usb::cdc::driver->ReceiveSerial(buf.data(), send_len);
+      while (recv_len == 0) {
+        recv_len = usb::cdc::driver->ReceiveSerial(buf.data(), send_len);
+      }
+      PrintToFd(*files_[1], "%.*s\n", recv_len, buf.data());
+    }();
   } else if (command[0] != 0) {
     auto file_entry = FindCommand(command);
     if (!file_entry) {

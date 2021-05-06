@@ -38,6 +38,28 @@ enum class ConfigPhase {
  * 他の処理を挟まず，そのポートについての処理だけをしなければならない．
  * kWaitingAddressed はリセット（kResettingPort）からアドレス割り当て
  * （kAddressingDevice）までの一連の処理の実行を待っている状態．
+ *
+ * ============================
+ * 状態遷移（代表的なパターン）
+ * ============================
+ *
+ * ResetPort()
+ *   kNotConnected --> kResettingPort
+ *
+ * EnableSlot()
+ *   kResettingPort --> kEnablingSlot
+ *
+ * AddressDevice()
+ *   kEnablingSlot --> kAddressingDevice
+ *
+ * InitializeDevice()
+ *   kAddressingDevice --> kInitializingDevice
+ *
+ * ConfigureEndpoints()
+ *   kInitializingDevice --> kConfiguringEndpoints
+ *
+ * CompleteConfiguration()
+ *   kConfiguringEndpoints --> kConfigured
  */
 
 std::array<volatile ConfigPhase, 256> port_config_phase{}; // index: port number
@@ -213,6 +235,9 @@ Error OnEvent(Controller &xhc, TransferEventTRB &trb) {
     return err;
   }
 
+  // デバイスの初期化が終わると dev->OnTransferEventReceived(trb) の中で
+  // dev->IsInitialized() が真になり、下の ConfigureEndpoints() が実行される。
+
   const auto port_id = dev->DeviceContext()->slot_context.bits.root_hub_port_num;
   if (dev->IsInitialized() && port_config_phase[port_id] == ConfigPhase::kInitializingDevice) {
     return ConfigureEndpoints(xhc, *dev);
@@ -319,7 +344,7 @@ void SwitchEhci2Xhci(const pci::Device &xhc_dev) {
   pci::WriteConfReg(xhc_dev, 0xd8, superspeed_ports);          // USB3_PSSEN
   uint32_t ehci2xhci_ports = pci::ReadConfReg(xhc_dev, 0xd4);  // XUSB2PRM
   pci::WriteConfReg(xhc_dev, 0xd0, ehci2xhci_ports);           // XUSB2PR
-  Log(kDebug, "SwitchEhci2Xhci: SS = %02x, xHCI = %02x\n", superspeed_ports, ehci2xhci_ports);
+  Log(kDebug, "SwitchEhci2Xhci: SS = %02, xHCI = %02x\n", superspeed_ports, ehci2xhci_ports);
 }
 } // namespace
 
@@ -438,8 +463,7 @@ Error ConfigurePort(Controller &xhc, Port &port) {
 }
 
 Error ConfigureEndpoints(Controller &xhc, Device &dev) {
-  const auto configs = dev.EndpointConfigs();
-  const auto len = dev.NumEndpointConfigs();
+  auto &ep_configs = dev.EndpointConfigs();
 
   memset(&dev.InputContext()->input_control_context, 0, sizeof(InputControlContext));
   memcpy(&dev.InputContext()->slot_context, &dev.DeviceContext()->slot_context,
@@ -463,25 +487,25 @@ Error ConfigureEndpoints(Controller &xhc, Device &dev) {
         return interval - 1;
       }};
 
-  for (int i = 0; i < len; ++i) {
-    const DeviceContextIndex ep_dci{configs[i].ep_id};
+  for (auto &ep_config : ep_configs) {
+    const DeviceContextIndex ep_dci{ep_config.ep_id};
     auto ep_ctx = dev.InputContext()->EnableEndpoint(ep_dci);
-    switch (configs[i].ep_type) {
+    switch (ep_config.ep_type) {
     case EndpointType::kControl:
       ep_ctx->bits.ep_type = 4;
       break;
     case EndpointType::kIsochronous:
-      ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 5 : 1;
+      ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 5 : 1;
       break;
     case EndpointType::kBulk:
-      ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 6 : 2;
+      ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 6 : 2;
       break;
     case EndpointType::kInterrupt:
-      ep_ctx->bits.ep_type = configs[i].ep_id.IsIn() ? 7 : 3;
+      ep_ctx->bits.ep_type = ep_config.ep_id.IsIn() ? 7 : 3;
       break;
     }
-    ep_ctx->bits.max_packet_size = configs[i].max_packet_size;
-    ep_ctx->bits.interval = convert_interval(configs[i].ep_type, configs[i].interval);
+    ep_ctx->bits.max_packet_size = ep_config.max_packet_size;
+    ep_ctx->bits.interval = convert_interval(ep_config.ep_type, ep_config.interval);
     ep_ctx->bits.average_trb_length = 1;
 
     auto tr = dev.AllocTransferRing(ep_dci, 32);

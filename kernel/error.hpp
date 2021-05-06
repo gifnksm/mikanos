@@ -35,6 +35,7 @@ public:
     kIsDirectory,
     kNoSuchEntry,
     kFreeTypeError,
+    kEndpointNotInCharge,
     kLastOfCode, // この列挙子は常に最後に配置する
   };
 
@@ -69,6 +70,7 @@ private:
       "kIsDirectory",
       "kNoSuchEntry",
       "kFreeTypeError",
+      "kEndpointNotInCharge",
   };
   static_assert(Error::Code::kLastOfCode == code_names_.size());
 
