@@ -368,6 +368,21 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *system_tab
     }
   }
 
+  struct FrameBufferConfig config = {
+      (UINT8 *)gop->Mode->FrameBufferBase, gop->Mode->Info->PixelsPerScanLine,
+      gop->Mode->Info->HorizontalResolution, gop->Mode->Info->VerticalResolution, 0};
+  switch (gop->Mode->Info->PixelFormat) {
+  case PixelRedGreenBlueReserved8BitPerColor:
+    config.pixel_format = kPixelRgbResv8BitPerColor;
+    break;
+  case PixelBlueGreenRedReserved8BitPerColor:
+    config.pixel_format = kPixelBgrResv8BitPerColor;
+    break;
+  default:
+    Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
+    Halt();
+  }
+
   status = gBS->ExitBootServices(image_handle, memmap.map_key);
   if (EFI_ERROR(status)) {
     status = GetMemoryMap(&memmap);
@@ -383,21 +398,6 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *system_tab
   }
 
   UINT64 entry_addr = *(UINT64 *)(kernel_first_addr + 24);
-
-  struct FrameBufferConfig config = {
-      (UINT8 *)gop->Mode->FrameBufferBase, gop->Mode->Info->PixelsPerScanLine,
-      gop->Mode->Info->HorizontalResolution, gop->Mode->Info->VerticalResolution, 0};
-  switch (gop->Mode->Info->PixelFormat) {
-  case PixelRedGreenBlueReserved8BitPerColor:
-    config.pixel_format = kPixelRgbResv8BitPerColor;
-    break;
-  case PixelBlueGreenRedReserved8BitPerColor:
-    config.pixel_format = kPixelBgrResv8BitPerColor;
-    break;
-  default:
-    Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
-    Halt();
-  }
 
   VOID *acpi_table = NULL;
   for (UINTN i = 0; i < system_table->NumberOfTableEntries; ++i) {
