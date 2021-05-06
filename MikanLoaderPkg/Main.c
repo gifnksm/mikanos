@@ -8,6 +8,7 @@
 #include <Library/PrintLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
 #include <Protocol/BlockIo.h>
 #include <Protocol/DiskIo2.h>
 #include <Protocol/LoadedImage.h>
@@ -407,9 +408,9 @@ EFI_STATUS EFIAPI UefiMain(EFI_HANDLE image_handle, EFI_SYSTEM_TABLE *system_tab
   }
 
   typedef void EntryPointType(const struct FrameBufferConfig *, const struct MemoryMap *,
-                              const VOID *, VOID *);
+                              const VOID *, VOID *, EFI_RUNTIME_SERVICES *);
   EntryPointType *entry_point = (EntryPointType *)entry_addr;
-  entry_point(&config, &memmap, acpi_table, volume_image);
+  entry_point(&config, &memmap, acpi_table, volume_image, gRT);
 
   Print(L"All done\n");
 
