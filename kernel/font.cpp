@@ -7,6 +7,7 @@
 #include "font.hpp"
 
 #include "fat.hpp"
+#include "logger.hpp"
 
 #include <cstdlib>
 #include <vector>
@@ -106,6 +107,10 @@ std::pair<char32_t, int> ConvertUtf8To32(const char *u8) {
 bool IsHankaku(char32_t c) { return c <= 0x7f; }
 
 WithError<FT_Face> NewFtFace() {
+  if (!nihongo_buf) {
+    return {0, MAKE_ERROR(Error::kNoSuchEntry)};
+  }
+
   FT_Face face;
   if (int err =
           FT_New_Memory_Face(ft_library, nihongo_buf->data(), nihongo_buf->size(), 0, &face)) {
@@ -161,18 +166,21 @@ Error WriteUnicode(PixelWriter &writer, Vector2D<int> pos, char32_t c, const Pix
 
 void InitializeFont() {
   if (int err = FT_Init_FreeType(&ft_library)) {
+    Log(kError, "failed to initialize FreeType library\n");
     exit(1);
   }
 
   auto [entry, pos_slash] = fat::FindFile("/nihongo.ttf");
   if (entry == nullptr || pos_slash) {
-    exit(1);
+    Log(kWarn, "no nihongo.ttf\n");
+    return;
   }
 
   const size_t size = entry->file_size;
   nihongo_buf = new std::vector<uint8_t>(size);
   if (LoadFile(nihongo_buf->data(), size, *entry) != size) {
     delete nihongo_buf;
+    Log(kError, "failed to load nihongo.ttf");
     exit(1);
   }
 }
