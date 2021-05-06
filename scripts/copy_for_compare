@@ -1,0 +1,161 @@
+#!/bin/bash -eux
+
+curdir="$(readlink -f "$(dirname "$0")")"
+
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <reference_repository>" >&2
+  exit 1
+fi
+
+ref_repo_src=$1
+if ! [ -d "${ref_repo_src}" ]; then
+  echo "reference repository not exist: ${ref_repo_src}" >&2
+  exit 1
+fi
+
+ref_repo_src="$(readlink -f "${ref_repo_src}")"
+own_repo_src="$(readlink -f "${curdir}/..")"
+cd "${own_repo_src}"
+
+compare_dirs=(MikanLoaderPkg apps kernel resource)
+
+rm -rf target/compare
+ref_repo=target/compare/ref
+own_repo=target/compare/own
+
+mkdir -p "${ref_repo}" "${own_repo}"
+
+for dir in "${compare_dirs[@]}"; do
+    ln -s "../../../${dir}" "${own_repo}/"
+    cp -rf "${ref_repo_src}/${dir}" "${ref_repo}/"
+done
+
+find "${ref_repo}/" -type f \
+     -name Makefile -o \
+     -name Doxyfile -o \
+     -name .gitignore |\
+    xargs rm
+
+find "${ref_repo}/" -type f -regex '.*\.\(cpp\|hpp\|c\|h\|asm\)$' |
+    xargs sed -i '
+    \!^ *\(//\|;\) #@@range_\(begin\|end\).*!d
+    s/\<GetCS\>/GetCs/g
+    s/\<LoadIDT\>/LoadIdt/g
+    s/\<kNoPCIMSI\>/kNoPciMsi/g
+    s/\<kPixelRGBResv8BitPerColor\>/kPixelRgbResv8BitPerColor/g
+    s/\<kPixelBGRResv8BitPerColor\>/kPixelBgrResv8BitPerColor/g
+    s/\<RGBResv8BitPerColorPixelWriter\>/RgbResv8BitPerColorPixelWriter/g
+    s/\<BGRResv8BitPerColorPixelWriter\>/BgrResv8BitPerColorPixelWriter/g
+    s/\<SetIDTEntry\>/SetIdtEntry/g
+    s/\<kLDT\>/kLdt/g
+    s/\<MakeIDTAttr\>/MakeIdtAttr/g
+    s/\<SetIDTEntry\>/SetIdtEntry/g
+    s/\<kXHCI\>/kXhci/g
+    s/\<kDesktopBGColor\>/kDesktopBgColor/g
+    s/\<kDesktopFGColor\>/kDesktopFgColor/g
+    s/\<kInterruptXHCI\>/kInterruptXhci/g
+    s/\<IntHandlerXHCI\>/IntHandlerXhci/g
+    s/\<kTSSAvailable\>/kTssAvailable/g
+    s/\<kTSSBusy\>/kTssBusy/g
+    s/\<MSITriggerMode\>/MsiTriggerMode/g
+    s/\<MSIDeliveryMode\>/MsiDeliveryMode/g
+    s/\<kEfiACPIReclaimMemory\>/kEfiAcpiReclaimMemory/g
+    s/\<kEfiACPIMemoryNVS\>/kEfiAcpiMemoryNvs/g
+    s/\<kEfiMemoryMappedIO\>/kEfiMemoryMappedIo/g
+    s/\<kEfiMemoryMappedIOPortSpace\>/kEfiMemoryMappedIoPortSpace/g
+    s/\<MSICapability\>/MsiCapability/g
+    s/\<ReadMSICapability\>/ReadMsiCapability/g
+    s/\<WriteMSICapability\>/WriteMsiCapability/g
+    s/\<ConfigureMSIRegister\>/ConfigureMsiRegister/g
+    s/\<ConfigureMSIXRegister\>/ConfigureMsixRegister/g
+    s/\<ConfigureMSI\>/ConfigureMsi/g
+    s/\<ConfigureMSIFixedDestination\>/ConfigureMsiFixedDestination/g
+    s/\<kCapabilityMSI\>/kCapabilityMsi/g
+    s/\<kCapabilityMSIX\>/kCapabilityMsix/g
+    s/\<kSMI\>/kSmi/g
+    s/\<kNMI\>/kNmi/g
+    s/\<kINIT\>/kInit/g
+    s/\<kExtINT\>/kExtInt/g
+    s/\<kUEFIPageSize\>/kUefiPageSize/g
+    s/\<SetDSAll\>/SetDsAll/g
+    s/\<SetCSSS\>/SetCsSs/g
+    s/\<LoadGDT\>/LoadGdt/g
+    s/\<SetCR3\>/SetCr3/g
+    s/\<FrameID\>/FrameId/g
+    s/\<ID()/Id()/g
+    s/\<InitializeLAPICTimer\>/InitializeLapicTimer/g
+    s/\<StartLAPICTimer\>/StartLapicTimer/g
+    s/\<LAPICTimerElapsed\>/LapicTimerElapsed/g
+    s/\<StopLAPICTimer\>/StopLapicTimer/g
+    s/\<SetLayerID\>/SetLayerId/g
+    s/\<LayerID\>/LayerId/g
+    s/\<kKernelCS\>/kKernelCs/g
+    s/\<kKernelSS\>/kKernelSs/g
+    s/\<kKernelDS\>/kKernelDs/g
+    s/\<InitializePCI\>/InitializePci/g
+    s/\<kLAPICTimer\>/kLapicTimer/g
+    s/\<kInterruptLAPICTimer\>/kInterruptLapicTimer/g
+    s/\<IntHandlerLAPICTimer\>/IntHandlerLapicTimer/g
+    s/\<LAPICTimerOnInterrupt\>/LapicTimerOnInterrupt/g
+    s/\<RSDP\>/Rsdp/g
+    s/"Rsdp/"RSDP/g
+    s/\<XSDT\>/Xsdt/g
+    s/"Xsdt/"XSDT/g
+    s/of Xsdt/of XSDT/g
+    s/\<FADT\>/Fadt/g
+    s/"Fadt/"FADT/g
+    s/of Fadt/of FADT/g
+    s/\<kPMTimerFreq\>/kPmTimerFreq/g
+    s/\<GetCR3\>/GetCr3/g
+    s/\<BPB\>/Bpb/g
+    s/\<kVolumeID\>/kVolumeId/g
+    s/\<LoadELF\>/LoadElf/g
+    s/\<kTSS\>/kTss/g
+    s/\<InitializeTSS\>/InitializeTss/g
+    s/\<kRSP0Frames\>/kRsp0Frames/g
+    s/\<LoadTR\>/LoadTr/g
+    s/\<FaultHandler\(No\|With\)Error(..)$/\0;/g
+    s/\<WriteMSR\>/WriteMsr/g
+    s/\<SetTSS\>/SetTss/g
+    s/\<kISTForTimer\>/kIstForTimer/g
+    s/\<OSStackPointer\>/OsStackPointer/g
+    s/\<GetCurrentTaskOSStackPointer\>/GetCurrentTaskOsStackPointer/g
+    s/\<TaskID\>/TaskId/g
+    s/\<ResetCR3\>/ResetCr3/g
+    s/\<SetupPML4\>/SetupPml4/g
+    s/\<FreePML4\>/FreePml4/g
+    s/\<AllocateFD\>/AllocateFd/g
+    s/\<GetFAT\>/GetFat/g
+    s/\<GetCR2\>/GetCr2/g
+    s/\<GetCR0\>/GetCr0/g
+    s/\<SetCR0\>/SetCr0/g
+    s/\<InvalidateTLB\>/InvalidateTlb/g
+    s/\<CountUTF8Size\>/CountUtf8Size/g
+    s/\<ConvertUTF8To32\>/ConvertUtf8To32/g
+    s/\<NewFTFace\>/NewFtFace/g
+    s/\<PrintToFD\>/PrintToFd/g
+    s/\<CopyUTF8String\>/CopyUtf8String/g
+'
+
+
+find "${ref_repo}/" -type f -name '*.asm' |
+    xargs sed -i '
+    s/^    /        /
+    s/^\(global\|bits\|section\|extern\)\>/        \1/
+    s/^\(\..*:$\)/        \1/
+    s/^ *;\( [^ ]\|$\)/        ;;\1/
+    s/\([^ ]\)\(\*\**\) /\1 \2/g
+    s/\([^ ]\)\(&\) /\1 \2/g
+'
+
+find "${ref_repo}/" -type f -name '*.asm' | \
+     xargs awk -i inplace '{
+     if (!match($0, /^([^;]* );( .*)$/, m)) {
+         print $0
+         next
+     }
+     printf("%-32s;%s\n", m[1], m[2])
+     }'
+
+find "${ref_repo}/" -type f -regex '.*\.\(cpp\|hpp\|c\|h\)$' |
+    xargs clang-format -i
