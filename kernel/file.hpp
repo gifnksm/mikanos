@@ -17,3 +17,4 @@ public:
 };
 
 size_t PrintToFd(FileDescriptor &fd, const char *format, ...) __attribute__((format(printf, 2, 3)));
+size_t ReadDelim(FileDescriptor &fd, char delim, char *buf, size_t len);
