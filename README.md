@@ -6,6 +6,8 @@ Arch Linux on WSL2 + systemd で実装。
 
 ## 利用したソフトウェア一覧
 
+本リポジトリの作者の環境に元からインストールされていたものは除く。
+
 * 第1章
   * `hexedit`
   * `qemu`
@@ -22,7 +24,6 @@ Arch Linux on WSL2 + systemd で実装。
 ### 初期設定 (初回のみ)
 
 ```console
-$ git submodule update --init --recursive
 $ ./scripts/setup_edk2
 $ ./scripts/setup_stdlib
 ```
@@ -32,19 +33,7 @@ $ ./scripts/setup_stdlib
 カーネルや UEFI 等のビルドを行い、 QEMU で実行します。
 
 ```console
-$ make run-qemu-mikanos
-```
-
-### ディスクイメージをビルド
-
-```console
-$ make target/mikanos.img
-```
-
-### カーネルをビルド
-
-```console
-$ make target/kernel.elf
+$ make run
 ```
 
 ### `compiler_commands.json` の更新

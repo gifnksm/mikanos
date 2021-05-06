@@ -7,9 +7,10 @@ MAKEFLAGS += --no-builtin-rules
 
 WORKDIR=target
 DEVENV=external/mikanos-build/devenv
-TARGET=target/mikanos.img
+TARGET=target/mikanos.img $(WORKDIR)/OVMF_CODE.fd $(WORKDIR)/OVMF_VARS.fd
+RESOURCES=$(wildcard resource/*)
 
-all: $(TARGET) $(WORKDIR)/OVMF_CODE.fd $(WORKDIR)/OVMF_VARS.fd
+all: $(TARGET)
 .PHONY: all
 
 clean:
@@ -28,7 +29,7 @@ apps:
 	$(MAKE) -C apps
 .PHONY: apps
 
-run-qemu-%: $(WORKDIR)/%.img $(WORKDIR)/OVMF_CODE.fd $(WORKDIR)/OVMF_VARS.fd
+run: $(TARGET)
 	qemu-system-x86_64 \
 	    -m 1G \
 	    -drive if=pflash,format=raw,readonly,file=./target/OVMF_CODE.fd \
@@ -38,15 +39,13 @@ run-qemu-%: $(WORKDIR)/%.img $(WORKDIR)/OVMF_CODE.fd $(WORKDIR)/OVMF_VARS.fd
 	    -device usb-mouse \
 	    -device usb-kbd \
 	    -monitor stdio
-.PHONY: run-qemu-%
+.PHONY: run
 
 $(WORKDIR)/%.fd: $(DEVENV)/%.fd Makefile
 	mkdir -p $(@D)
 	cp $< $@
 
-ANOTHER_FILE=
-APPS_DIR=
-$(WORKDIR)/%.img: ./target/%.efi apps Makefile
+$(WORKDIR)/mikanos.img: $(WORKDIR)/mikanos.efi $(WORKDIR)/kernel.elf apps $(RESOURCES) Makefile
 	mkdir -p $(@D)
 	qemu-img create -f raw $@ 200M
 	mkfs.fat -n 'MIKAN OS' -s 2 -f 2 -R 32 -F 32 $@
@@ -54,18 +53,11 @@ $(WORKDIR)/%.img: ./target/%.efi apps Makefile
 	sudo mount -o loop $@ $(WORKDIR)/mnt
 	sudo mkdir -p $(WORKDIR)/mnt/EFI/BOOT/
 	sudo cp $< $(WORKDIR)/mnt/EFI/BOOT/BOOTX64.EFI
-	if [ "$(ANOTHER_FILE)" != "" ]; then
-	    sudo cp "$(ANOTHER_FILE)" $(WORKDIR)/mnt/
-	fi
-	if [ "$(APPS_DIR)" != "" ]; then
-	    sudo mkdir -p $(WORKDIR)/mnt/$(APPS_DIR)
-	fi
-	sudo cp $(WORKDIR)/apps/* $(WORKDIR)/mnt/$(APPS_DIR)/
-	sudo cp resource/* $(WORKDIR)/mnt/
+	sudo cp $(WORKDIR)/kernel.elf $(WORKDIR)/mnt/
+	sudo mkdir -p $(WORKDIR)/mnt/apps
+	sudo cp $(WORKDIR)/apps/* $(WORKDIR)/mnt/apps/
+	sudo cp $(RESOURCES) $(WORKDIR)/mnt/
 	sudo umount $(WORKDIR)/mnt
-$(WORKDIR)/mikanos.img: $(WORKDIR)/kernel.elf
-$(WORKDIR)/mikanos.img: ANOTHER_FILE=$(WORKDIR)/kernel.elf
-$(WORKDIR)/mikanos.img: APPS_DIR=apps
 
 $(WORKDIR)/mikanos.efi: FORCE
 	mkdir -p $(@D)
