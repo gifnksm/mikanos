@@ -61,6 +61,7 @@ $(WORKDIR)/%.img: ./target/%.efi apps Makefile
 	    sudo mkdir -p $(WORKDIR)/mnt/$(APPS_DIR)
 	fi
 	sudo cp $(WORKDIR)/apps/* $(WORKDIR)/mnt/$(APPS_DIR)/
+	sudo cp resource/* $(WORKDIR)/mnt/
 	sudo umount $(WORKDIR)/mnt
 $(WORKDIR)/mikanos.img: $(WORKDIR)/kernel.elf
 $(WORKDIR)/mikanos.img: ANOTHER_FILE=$(WORKDIR)/kernel.elf

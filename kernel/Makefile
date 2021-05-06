@@ -25,6 +25,7 @@ CPPFLAGS=\
     -I$(DEVENV)/x86_64-elf/include/c++/v1 \
     -I$(DEVENV)/x86_64-elf/include \
     -I$(DEVENV)/x86_64-elf/include \
+    -I$(DEVENV)/x86_64-elf/include/freetype2 \
     -nostdlibinc -D__ELF__ -D_LDBL_EQ_DBL -D_GNU_SOURCE -D_POSIX_TIMERS
 CFLAGS=\
     -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone \
@@ -45,7 +46,7 @@ clean:
 
 $(TARGET): $(OBJS) Makefile
 	mkdir -p $(@D)
-	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi -lm
+	ld.lld $(LDFLAGS) -o $@ $(OBJS) -lc -lc++ -lc++abi -lm -lfreetype
 
 $(WORKDIR)/%.o: %.cpp Makefile
 	mkdir -p $(@D)
